@@ -1,4 +1,4 @@
-# Radiosonde Tracking — Nepal
+# Radiosonde Tracking 
 
 A web-based radiosonde tracking platform.
 
@@ -18,7 +18,6 @@ This project provides real-time and historical tracking of **radiosondes** — b
 - Wind Speed & Direction
 - GPS Position (Latitude / Longitude)
 
-The tracker aggregates radiosonde data relevant to Nepal and nearby regions, useful for meteorology enthusiasts, atmospheric researchers, and amateur radio operators.
 
 Radiosonde detection and decoding is powered by [**radiosonde_auto_rx**](https://github.com/projecthorus/radiosonde_auto_rx) — an open-source decoder that automatically detects and decodes radiosonde signals using RTL-SDR or AirSpy receivers.
 
@@ -116,7 +115,7 @@ sio.connect(
 sio.wait()
 ```
 
-> The forwarder connects to your local `radiosonde_auto_rx` web interface and streams telemetry events to the Sonde Nepal server in real time. Make sure `auto_rx` is running before starting the forwarder.
+> The forwarder connects to your local `radiosonde_auto_rx` web interface and streams telemetry events to the Sonde server in real time. Make sure `auto_rx` is running before starting the forwarder.
 
 ---
 
