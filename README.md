@@ -274,7 +274,7 @@ https://sonde.kushal-kc.com.np/data/hodograph/?sonde_id=IMET5-55093438
 ## Author
 
 **Kushal KC**
-- [kckushal.com.np](https://www.kushal-kc.com.np/)
+- [kushal-kc.com.np](https://www.kushal-kc.com.np/)
 
 ---
 
