@@ -1,0 +1,761 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="/static/tracker/ballon.png" type="image/png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>Sonde | History</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #fff;
+    color: #000;
+}
+
+#nav {
+    border-bottom: 1px solid #000;
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: #fff;
+    color: #000;
+}
+
+.logo {
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    color: #000;
+    cursor: pointer;
+}
+
+.links { display: flex; gap: 18px; }
+
+.links a {
+    color: #000;
+    text-decoration: none;
+    font-size: 14px;
+    padding: 4px 6px;
+}
+.links a:hover { text-decoration: underline; }
+.links a.active { font-weight: bold; border-bottom: 2px solid #000; }
+
+#container {
+    display: flex;
+    height: calc(100vh - 45px);
+}
+
+#table {
+    width: 23%;
+    overflow-y: auto;
+    border-right: 1px solid #ccc;
+    background: #f8f8f8;
+    display: flex;
+    flex-direction: column;
+}
+
+#map {
+    width: 77%;
+    overflow: hidden;
+}
+#controls {
+    padding: 7px 8px 6px;
+    border-bottom: 1px solid #ccc;
+    background: #f0f0f0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.ctrl-btn {
+    background: #3f3e3e;
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: Arial;
+}
+.ctrl-btn:hover { background: #222; }
+.ctrl-btn.light {
+    background: #fff;
+    color: #000;
+    border: 1px solid #999;
+}
+.ctrl-btn.light:hover { background: #eee; }
+
+#status-bar {
+    padding: 4px 8px;
+    font-size: 11px;
+    color: #555;
+    background: #fafafa;
+    border-bottom: 1px solid #e0e0e0;
+    flex-shrink: 0;
+}
+
+#sonde-scroll {
+    flex-shrink: 0;
+    max-height: 240px;
+    overflow-y: auto;
+    border-bottom: 2px solid #ccc;
+}
+
+.sonde-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.sonde-table thead th {
+    background: #e8e8e8;
+    border: 1px solid #ccc;
+    padding: 5px 6px;
+    font-size: 11px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+.sonde-table tbody tr {
+    cursor: pointer;
+    border-bottom: 1px solid #e8e8e8;
+    transition: background 0.1s;
+}
+.sonde-table tbody tr:hover { background: #eef5ff; }
+.sonde-table tbody tr.selected { background: #ddeeff; font-weight: bold; }
+
+.sonde-table td {
+    padding: 5px 6px;
+    text-align: center;
+    border-right: 1px solid #eee;
+    vertical-align: middle;
+}
+.sonde-table td:last-child { border-right: none; }
+
+.color-swatch {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    margin-right: 3px;
+    vertical-align: middle;
+}
+
+#detail-section {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    display: none;
+}
+
+.group {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 7px;
+    background: white;
+}
+
+.group th, .group td {
+    border: 1px solid #ccc;
+    padding: 5px 6px;
+    font-size: 12px;
+    text-align: center;
+}
+
+.group th {
+    background: #f0f0f0;
+    font-size: 10px;
+    font-weight: bold;
+}
+.chart-wrap {
+    background: white;
+    border: 1px solid #ddd;
+    padding: 4px;
+    margin-bottom: 6px;
+}
+.chart-wrap canvas { max-height: 100px; }
+
+
+.section-label {
+    font-size: 10px;
+    font-weight: bold;
+    color: #777;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 8px 0 4px;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 6px;
+}
+
+#export-row {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+
+#kmlbutton, #kmlbutton2, #skewtbutton, #csvbutton {
+    flex: 1;
+    background: #3f3e3e;
+    color: white;
+    padding: 7px 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: Arial;
+}
+#kmlbutton:hover, #kmlbutton2:hover,
+#skewtbutton:hover, #csvbutton:hover { background: #222; }
+
+#skewtDiv { display: none; padding: 4px 0; }
+#skewtImg { width: 100%; border: 1px solid #ccc; }
+
+@media (max-width: 768px) {
+    #container { flex-direction: column; height: auto; overflow-y: auto; }
+    #map { width: 100%; height: 50vh; order: 1; }
+    #table { width: 100%; order: 2; border-right: none; border-top: 1px solid #ccc; }
+}
+</style>
+</head>
+
+<body>
+
+<div id="nav">
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='/'">Sonde</div>
+        <div class="links">
+            <a href="/history" class="active">History</a>
+            <a href="/api-doc">API</a>
+            <a href="/3d">KML</a>
+            <a href="/accounts/dash">Dashboard</a>
+            <a href="/burst">Burst</a>
+            <a href="/predict">Predict</a>            
+            <a href="/report/submit">Report</a>
+            <a href="/faq">About</a>
+            <a href="https://github.com">GitHub</a>
+        </div>
+    </nav>
+</div>
+
+<div id="container">
+
+    <div id="table">
+
+        <div id="controls">
+            <button class="ctrl-btn" onclick="plotSelected()">Plot Paths</button>
+            <button class="ctrl-btn" onclick="resetPaths()">Reset</button>
+            <button class="ctrl-btn light" onclick="selectAll()">Select All</button>
+            <button class="ctrl-btn light" onclick="selectNone()">None</button>
+            <button class="ctrl-btn light" onclick="plotLandings()">Plot Landings</button>
+        </div>
+
+        <div id="status-bar">Loading flight history&hellip;</div>
+
+        <div id="sonde-scroll">
+            <table class="sonde-table">
+                <thead>
+                    <tr>
+                        <th>&#9745;</th>
+                        <th>Sonde ID</th>
+                        <th>Type</th>
+                        <th>Date</th>
+                        <th>Max Alt</th>
+                    </tr>
+                </thead>
+                <tbody id="sonde-tbody">
+                    <tr><td colspan="5" style="color:#999;padding:10px;">Loading&hellip;</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="detail-section">
+
+            <div class="section-label">Selected Flight</div>
+
+            <table class="group">
+                <tr><th>Sonde ID</th><th>Type</th><th>Subtype</th></tr>
+                <tr><td id="d_id">&#8212;</td><td id="d_type">&#8212;</td><td id="d_subtype">&#8212;</td></tr>
+            </table>
+
+            <table class="group">
+                <tr><th>Last Lat</th><th>Last Lon</th><th>Max Alt</th></tr>
+                <tr><td id="d_lat">&#8212;</td><td id="d_lon">&#8212;</td><td id="d_alt">&#8212;</td></tr>
+            </table>
+
+            <table class="group">
+                <tr><th>Start Time (UTC)</th><th>Frames</th></tr>
+                <tr><td id="d_time">&#8212;</td><td id="d_frames">&#8212;</td></tr>
+            </table>
+
+            <table class="group">
+                <tr><th>Vel H (m/s)</th><th>Vel V (m/s)</th><th>Heading</th></tr>
+                <tr><td id="d_velh">&#8212;</td><td id="d_velv">&#8212;</td><td id="d_head">&#8212;</td></tr>
+            </table>
+
+            <table class="group">
+                <tr><th>Min Temp</th><th>Max Humidity</th><th>Pressure</th></tr>
+                <tr><td id="d_temp">&#8212;</td><td id="d_hum">&#8212;</td><td id="d_pres">&#8212;</td></tr>
+            </table>
+
+            <table class="group">
+                <tr><th>Battery</th><th>Freq</th><th>SNR</th></tr>
+                <tr><td id="d_bat">&#8212;</td><td id="d_freq">&#8212;</td><td id="d_snr">&#8212;</td></tr>
+            </table>
+
+            <div class="section-label">Flight Charts</div>
+            <div class="chart-wrap"><canvas id="altChart"></canvas></div>
+            <div class="chart-wrap"><canvas id="tempChart"></canvas></div>
+            <div class="chart-wrap"><canvas id="humChart"></canvas></div>
+            <div class="chart-wrap"><canvas id="snrChart"></canvas></div>
+            <div class="chart-wrap"><canvas id="velChart"></canvas></div>
+
+            <div class="section-label">Export &amp; Tools</div>
+            <div id="export-row">
+                <button id="kmlbutton"   onclick="downloadKML(false)">KML (This)</button>
+                <button id="kmlbutton2"  onclick="downloadKML(true)">KML (All)</button>
+                <button id="csvbutton"   onclick="downloadCSV()">CSV</button>
+                <button id="skewtbutton" onclick="toggleSkewT()">Skew-T</button>
+            </div>
+
+            <div id="skewtDiv">
+                <img id="skewtImg" src="" alt="Skew-T Diagram">
+            </div>
+
+            <div style="height:16px;"></div>
+        </div>
+
+    </div><!-- /table -->
+
+    <div id="map"></div>
+
+</div><!-- /container -->
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+
+const COLORS = [
+  '#2563eb', 
+  '#dc2626', 
+  '#16a34a', 
+  '#f59e0b', 
+  '#7c3aed', 
+  '#0ea5e9', 
+  '#14b8a6', 
+  '#e11d48',
+  '#84cc16', 
+  '#6b7280'  
+];
+
+/* ── STATE ───────────────────────────────────────────── */
+let allSondes      = {};   // sid -> { data[], color, row, layer, sonde_id, type, subtype, frequency }
+let activeSondeId  = null;
+let landingMarkers = [];
+let charts         = {};
+
+/* ── MAP ─────────────────────────────────────────────── */
+const map = L.map('map').setView([27.682, 85.288], 11);
+
+const baseMaps = {
+    "Satellite":  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',    { attribution: 'Tiles &copy; Esri' }),
+    "Topo":       L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',                                                { attribution: '&copy; OpenTopoMap' }),
+    "Dark":       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',                                   { attribution: '&copy; CartoDB' }),
+    "Light":      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',                                  { attribution: '&copy; CartoDB' }),
+    "Esri Topo":  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',   { attribution: 'Tiles &copy; Esri' }),
+    "Esri Street":L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri' }),
+};
+baseMaps["Satellite"].addTo(map);
+L.control.layers(baseMaps, null, { position: 'bottomright' }).addTo(map);
+
+/* legend */
+const legend = L.control({ position: 'topright' });
+legend.onAdd = function () {
+    const div = L.DomUtil.create('div');
+    div.style.cssText = 'padding:8px 12px;font-size:13px;line-height:24px;margin-bottom:30px;';
+    div.innerHTML =
+        '<div><span style="display:inline-block;width:30px;height:3px;background:red;vertical-align:middle;margin-right:6px;"></span><span style="color:white;">Flight Path</span></div>' +
+        '<div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid red;margin-right:6px;vertical-align:middle;"></span><span style="color:white;">Landing</span></div>';
+    return div;
+};
+legend.addTo(map);
+
+/* UTC clock */
+const infoBox = L.control({ position: 'bottomleft' });
+infoBox.onAdd = function () {
+    const div = L.DomUtil.create('div');
+    div.style.cssText = 'font-size:12px;line-height:20px;color:white;padding:6px 10px;';
+    div.id = 'infoBox';
+    return div;
+};
+infoBox.addTo(map);
+setInterval(() => {
+    const el = document.getElementById('infoBox');
+    if (el) el.innerHTML = '<div>UTC: ' + new Date().toISOString().replace('T', ' ').slice(0, 19) + '</div>';
+}, 1000);
+
+/* station */
+const stationIcon = L.icon({
+    iconUrl: "{% static 'tracker/station.png' %}",
+    iconSize: [40, 40], iconAnchor: [20, 40]
+});
+const station = L.marker([27.682, 85.2881], { icon: stationIcon }).addTo(map);
+station.bindPopup('<b>Upper Air Radiosonde Station</b><br>Lat, Lon: 27.682, 85.2881', { closeButton: false, offset: [0, -20] });
+station.on('mouseover', function () { this.openPopup(); });
+station.on('mouseout',  function () { this.closePopup(); });
+
+/* ── CHARTS ──────────────────────────────────────────── */
+function makeChart(id, label, color) {
+    const ctx = document.getElementById(id).getContext('2d');
+    return new Chart(ctx, {
+        type: 'line',
+        data: { labels: [], datasets: [{ label, data: [], borderColor: color, borderWidth: 1, pointRadius: 0, tension: 0.2 }] },
+        options: {
+            responsive: true, animation: false,
+            plugins: { legend: { labels: { font: { size: 10 } } } },
+            scales: {
+                x: { ticks: { font: { size: 9 }, maxTicksLimit: 5 }, grid: { color: '#eee' } },
+                y: { ticks: { font: { size: 9 } },                   grid: { color: '#eee' } }
+            }
+        }
+    });
+}
+charts.alt  = makeChart('altChart',  'Altitude (m)',       'green');
+charts.temp = makeChart('tempChart', 'Temperature (\u00b0C)', 'blue');
+charts.hum  = makeChart('humChart',  'Humidity (%)',       'red');
+charts.snr  = makeChart('snrChart',  'SNR (dB)',           'black');
+charts.vel  = makeChart('velChart',  'Vertical Vel (m/s)', 'orange');
+
+async function fetchHistory() {
+    const res = await fetch('/history/data/');
+    return await res.json();
+}
+
+function buildTable() {
+    const tbody = document.getElementById('sonde-tbody');
+    tbody.innerHTML = '';
+
+    const sids = Object.keys(allSondes);
+    if (!sids.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="color:#999;padding:10px;">No flights.</td></tr>';
+        return;
+    }
+
+    sids.forEach(sid => {
+        const s = allSondes[sid];
+        const pts = s.data;
+        const maxAlt = pts.length ? Math.max(...pts.map(p => p.alt)).toFixed(0) : '—';
+        const dateStr = s.date ? s.date.slice(0, 10) : (pts.length ? pts[0].datetime.slice(0, 10) : '—');
+
+        const tr = document.createElement('tr');
+        tr.id = 'row-' + sid;
+        tr.innerHTML =
+            '<td>' +
+                '<span class="color-swatch" style="background:' + s.color + ';"></span>' +
+                '<input type="checkbox" id="chk-' + sid + '" checked>' +
+            '</td>' +
+            '<td style="font-weight:bold;">' + sid + '</td>' +
+            '<td>' + (s.type || '—') + '</td>' +
+            '<td>' + dateStr + '</td>' +
+            '<td>' + maxAlt + ' m</td>';
+
+        tr.addEventListener('click', function (e) {
+            if (e.target.type === 'checkbox') return;
+            selectSonde(sid);
+        });
+        tbody.appendChild(tr);
+        s.row = tr;
+    });
+}
+
+function getChecked() {
+    return Object.keys(allSondes).filter(sid => {
+        const chk = document.getElementById('chk-' + sid);
+        return chk && chk.checked;
+    });
+}
+
+function clearAllLayers() {
+    Object.keys(allSondes).forEach(sid => {
+        if (allSondes[sid].layer) { map.removeLayer(allSondes[sid].layer); allSondes[sid].layer = null; }
+    });
+}
+
+function clearLandingMarkers() {
+    landingMarkers.forEach(m => map.removeLayer(m));
+    landingMarkers = [];
+}
+
+
+function plotSelected() {
+    clearAllLayers();
+    clearLandingMarkers();
+
+    const checked = getChecked();
+    if (!checked.length) {
+        document.getElementById('status-bar').textContent = 'No sondes checked.';
+        return;
+    }
+
+    const allCoords = [];
+    checked.forEach(sid => {
+        const s = allSondes[sid];
+        if (!s.data.length) return;
+        const coords = s.data.map(p => [p.lat, p.lon]);
+        allCoords.push(...coords);
+
+        s.layer = L.polyline(coords, { color: s.color, weight: 2.5, opacity: 0.9 }).addTo(map);
+
+        // hover popup
+        const pathData = s.data;
+        s.layer.on('mousemove', function (e) {
+            let minDist = Infinity, closest = null;
+            pathData.forEach(pt => {
+                const d = map.distance(e.latlng, [pt.lat, pt.lon]);
+                if (d < minDist) { minDist = d; closest = pt; }
+            });
+            if (!closest) return;
+            L.popup({ closeButton: false, offset: [0, -4] })
+                .setLatLng(e.latlng)
+                .setContent(
+                    '<b>' + sid + '</b><br>' +
+                    'Alt: ' + closest.alt + ' m<br>' +
+                    'Temp: ' + closest.temp + ' \u00b0C&nbsp;&nbsp;Hum: ' + closest.humidity + ' %<br>' +
+                    'Vel\u2191: ' + closest.vel_v.toFixed(2) + ' m/s'
+                )
+                .openOn(map);
+        });
+        s.layer.on('mouseout', () => map.closePopup());
+    });
+
+    if (allCoords.length) map.fitBounds(allCoords, { padding: [40, 40] });
+    document.getElementById('status-bar').textContent = 'Showing ' + checked.length + ' flight path(s). Click a row to inspect.';
+}
+
+function resetPaths() {
+    clearAllLayers();
+    clearLandingMarkers();
+    document.getElementById('status-bar').textContent = 'Paths cleared.';
+}
+
+function selectAll() {
+    Object.keys(allSondes).forEach(sid => {
+        const chk = document.getElementById('chk-' + sid);
+        if (chk) chk.checked = true;
+    });
+}
+
+function selectNone() {
+    Object.keys(allSondes).forEach(sid => {
+        const chk = document.getElementById('chk-' + sid);
+        if (chk) chk.checked = false;
+    });
+}
+
+function plotLandings() {
+    clearLandingMarkers();
+    Object.keys(allSondes).forEach(sid => {
+        const s = allSondes[sid];
+        if (!s.data.length) return;
+        const last = s.data[s.data.length - 1];
+        const m = L.circleMarker([last.lat, last.lon], {
+            radius: 6, color: s.color, fillColor: s.color, fillOpacity: 0.85, weight: 2
+        }).addTo(map);
+        m.bindPopup('<b>' + sid + '</b><br>Last seen<br>Alt: ' + last.alt + ' m<br>' + last.datetime, { closeButton: false });
+        m.on('mouseover', function () { this.openPopup(); });
+        m.on('mouseout',  function () { this.closePopup(); });
+        m.on('click', function () { selectSonde(sid); });
+        landingMarkers.push(m);
+    });
+    const coords = Object.keys(allSondes)
+        .filter(sid => allSondes[sid].data.length)
+        .map(sid => { const l = allSondes[sid].data.slice(-1)[0]; return [l.lat, l.lon]; });
+    if (coords.length) map.fitBounds(coords, { padding: [40, 40] });
+    document.getElementById('status-bar').textContent = landingMarkers.length + ' landing location(s) plotted.';
+}
+
+function selectSonde(sid) {
+    activeSondeId = sid;
+    const s = allSondes[sid];
+    const pts = s.data;
+
+    // highlight row
+    document.querySelectorAll('.sonde-table tbody tr').forEach(r => r.classList.remove('selected'));
+    if (s.row) s.row.classList.add('selected');
+
+    document.getElementById('detail-section').style.display = 'block';
+
+    const last  = pts.length ? pts[pts.length - 1] : {};
+    const first = pts.length ? pts[0] : {};
+
+    document.getElementById('d_id').textContent      = sid;
+    document.getElementById('d_type').textContent    = s.type    || '—';
+    document.getElementById('d_subtype').textContent = s.subtype || '—';
+    document.getElementById('d_lat').textContent     = last.lat  || '—';
+    document.getElementById('d_lon').textContent     = last.lon  || '—';
+    document.getElementById('d_alt').textContent     = pts.length ? Math.max(...pts.map(p => p.alt)).toFixed(0) + ' m' : '—';
+    document.getElementById('d_time').textContent    = first.datetime
+        ? first.datetime.replace('T', ' ').replace('Z', '') + ' UTC' : '—';
+    document.getElementById('d_frames').textContent  = pts.length;
+
+    document.getElementById('d_velh').textContent = last.vel_h != null ? last.vel_h.toFixed(2) + ' m/s' : '—';
+    document.getElementById('d_velv').textContent = last.vel_v != null ? last.vel_v.toFixed(2) + ' m/s' : '—';
+    document.getElementById('d_head').textContent = last.heading != null ? last.heading.toFixed(1) + '\u00b0' : '—';
+
+    const validTemps = pts.map(p => p.temp).filter(v => v > -200);
+    document.getElementById('d_temp').textContent = validTemps.length ? Math.min(...validTemps).toFixed(1) + ' \u00b0C' : '—';
+    document.getElementById('d_hum').textContent  = pts.length ? Math.max(...pts.map(p => p.humidity)).toFixed(1) + ' %' : '—';
+    document.getElementById('d_pres').textContent = (last.pressure && last.pressure !== -1) ? last.pressure + ' hPa' : 'N/A';
+    document.getElementById('d_bat').textContent  = (last.battery  && last.battery  !== -1) ? last.battery  + ' V'   : 'N/A';
+    document.getElementById('d_freq').textContent = s.frequency || (last.f_centre ? (last.f_centre / 1e6).toFixed(3) + ' MHz' : '—');
+    document.getElementById('d_snr').textContent  = last.snr != null ? last.snr + ' dB' : '—';
+
+    // charts
+    const labels = pts.map(p => p.datetime.slice(11, 19));
+    function upd(ch, arr, color) {
+        ch.data.labels = labels;
+        ch.data.datasets[0].data = arr;
+        ch.data.datasets[0].borderColor = color;
+        ch.update();
+    }
+    upd(charts.alt,  pts.map(p => p.alt),       'green');
+    upd(charts.temp, pts.map(p => p.temp),       'blue');
+    upd(charts.hum,  pts.map(p => p.humidity),   'red');
+    upd(charts.snr,  pts.map(p => p.snr),        'black');
+    upd(charts.vel,  pts.map(p => p.vel_v),      'orange');
+
+    if (s.layer) map.fitBounds(s.layer.getBounds(), { padding: [40, 40] });
+}
+
+/* ── SKEW-T ──────────────────────────────────────────── */
+function toggleSkewT() {
+    if (!activeSondeId) { alert('Select a sonde first.'); return; }
+    const div = document.getElementById('skewtDiv');
+    const img = document.getElementById('skewtImg');
+    if (div.style.display === 'none' || !div.style.display) {
+        img.src = '/data/skewt/?sonde_id=' + activeSondeId;
+        div.style.display = 'block';
+    } else {
+        div.style.display = 'none';
+    }
+}
+
+/* ── KML ─────────────────────────────────────────────── */
+const KML_COLORS = {
+    '#e63946': 'ff4639e6', '#2a9d8f': 'ff8f9d2a', '#e9a020': 'ff20a0e9',
+    '#1d6fa4': 'ffa46f1d', '#7b2d8b': 'ff8b2d7b', '#2dc653': 'ff53c62d',
+    '#d62598': 'ff9825d6', '#f97316': 'ff1673f9', '#0ea5e9': 'ffe9a50e', '#6366f1': 'fff16363'
+};
+
+function buildKML(sids) {
+    let pm = '';
+    sids.forEach(sid => {
+        const s = allSondes[sid];
+        if (!s || !s.data.length) return;
+        const c = KML_COLORS[s.color] || 'ff0000ff';
+        const coords = s.data.map(p => p.lon + ',' + p.lat + ',' + p.alt).join('\n');
+        const last = s.data[s.data.length - 1];
+        pm +=
+            '\n  <Placemark><name>' + sid + '</name>' +
+            '<Style><LineStyle><color>' + c + '</color><width>2</width></LineStyle>' +
+            '<PolyStyle><color>4d' + c.slice(2) + '</color></PolyStyle></Style>' +
+            '<LineString><extrude>1</extrude><altitudeMode>absolute</altitudeMode>' +
+            '<coordinates>' + coords + '</coordinates></LineString></Placemark>' +
+            '\n  <Placemark><name>' + sid + ' Last</name>' +
+            '<Point><coordinates>' + last.lon + ',' + last.lat + ',' + last.alt + '</coordinates></Point></Placemark>';
+    });
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Sonde Nepal</name>' + pm + '\n</Document></kml>';
+}
+
+function dl(content, name, mime) {
+    const url = URL.createObjectURL(new Blob([content], { type: mime }));
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.click();
+    URL.revokeObjectURL(url);
+}
+
+function downloadKML(allChecked) {
+    const sids = allChecked ? getChecked() : (activeSondeId ? [activeSondeId] : []);
+    if (!sids.length) { alert('No sondes selected.'); return; }
+    dl(buildKML(sids), 'sonde_' + (allChecked ? 'all' : activeSondeId) + '.kml', 'application/vnd.google-earth.kml+xml');
+}
+
+function downloadCSV() {
+    if (!activeSondeId) { alert('Select a sonde first.'); return; }
+    const pts = allSondes[activeSondeId].data;
+    const hdr = 'datetime,lat,lon,alt,temp,humidity,pressure,vel_h,vel_v,heading,snr,f_centre\n';
+    const rows = pts.map(p =>
+        [p.datetime, p.lat, p.lon, p.alt, p.temp, p.humidity,
+         p.pressure, p.vel_h, p.vel_v, p.heading, p.snr, p.f_centre].join(',')
+    ).join('\n');
+    dl(hdr + rows, 'sonde_' + activeSondeId + '.csv', 'text/csv');
+}
+
+async function init() {
+    try {
+        const res  = await fetchHistory();
+        const sondeList = res.data || [];
+
+        if (!sondeList.length) {
+            document.getElementById('status-bar').textContent = 'No historical data found.';
+            document.getElementById('sonde-tbody').innerHTML =
+                '<tr><td colspan="5" style="color:#999;padding:10px;">No flights recorded.</td></tr>';
+            return;
+        }
+
+        sondeList.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+        sondeList.forEach((sonde, i) => {
+            const sid = sonde.sonde_id;
+            const pts = (sonde.data || []).slice().sort(
+                (a, b) => new Date(a.datetime) - new Date(b.datetime)
+            );
+            allSondes[sid] = {
+                sonde_id:  sid,
+                type:      sonde.type      || '—',
+                subtype:   sonde.subtype   || '—',
+                frequency: sonde.frequency || null,
+                date:      sonde.date      || null,
+                data:      pts,
+                color:     COLORS[i % COLORS.length],
+                row:       null,
+                layer:     null
+            };
+        });
+
+        buildTable();
+
+        const n = sondeList.length;
+        document.getElementById('status-bar').textContent =
+            n + ' flight' + (n !== 1 ? 's' : '') + ' loaded. Check boxes then click \u201cPlot Paths\u201d.';
+
+        if (sondeList.length) selectSonde(sondeList[0].sonde_id);
+        plotSelected()
+
+    } catch (err) {
+        console.error(err);
+        document.getElementById('status-bar').textContent = 'Error loading history — check console.';
+        document.getElementById('sonde-tbody').innerHTML =
+            '<tr><td colspan="5" style="color:red;padding:10px;">Fetch error.</td></tr>';
+    }
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,330 @@
+{% load static %}
+<link rel="icon" href="/static/tracker/ballon.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;color:#000}
+#nav{border-bottom:1px solid #000;padding:10px 0;background:#fff}
+.navbar{max-width:900px;margin:auto;display:flex;justify-content:space-between;align-items:center;padding:0 10px}
+.logo{font-weight:bold;font-size:18px;cursor:pointer}
+.links a{text-decoration:none;color:#000;margin-left:15px;font-size:14px}
+.links a:hover{text-decoration:underline}
+.wrap{max-width:900px;margin:25px auto;padding:0 10px}
+.card{border:1px solid #000;padding:18px;margin-bottom:15px;background:#fff}
+h1{font-size:20px;margin-bottom:4px}
+h2{font-size:15px;margin-bottom:14px;font-weight:bold;border-bottom:1px solid #000;padding-bottom:6px}
+label{font-size:13px;font-weight:bold;display:block;margin-bottom:3px}
+input[type=number],select{width:100%;border:1px solid #000;padding:6px 8px;font-size:13px;font-family:Arial,sans-serif;background:#fff;color:#000;outline:none;margin-bottom:10px;border-radius:0}
+input:focus,select:focus{outline:2px solid #000;outline-offset:1px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px}
+.res{border-top:1px solid #000;padding-top:10px}
+.rl{font-size:11px;color:#555;margin-bottom:1px}
+.rv{font-size:20px;font-weight:bold;line-height:1.1}
+.ru{font-size:11px;color:#555}
+.btn{border:1px solid #000;background:#000;color:#fff;padding:8px 20px;font-size:13px;cursor:pointer;font-family:Arial,sans-serif}
+.btn:hover{background:#333}
+.btn-o{background:#fff;color:#000}
+.btn-o:hover{background:#f5f5f5}
+.alert{padding:8px 12px;font-size:13px;margin-bottom:12px;display:none;border:1px solid}
+.err{border-color:#c00;color:#c00;background:#fff5f5}
+.ok{border-color:#060;color:#060;background:#f5fff5}
+details summary{cursor:pointer;font-size:13px;font-weight:bold;list-style:none;user-select:none}
+details summary::-webkit-details-marker{display:none}
+details[open] summary{margin-bottom:12px}
+.cb{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.cb input[type=checkbox]{width:auto;margin:0;cursor:pointer}
+.cb label{margin:0;font-weight:normal;cursor:pointer}
+.note{font-size:11px;color:#666;margin-bottom:10px}
+footer{border-top:1px solid #000;text-align:center;padding:13px;margin-top:10px;font-size:11px;color:#555;background:#fff}
+@media(max-width:580px){.g2,.g3,.g4{grid-template-columns:1fr}}
+</style>
+
+<div id="nav">
+  <nav class="navbar">
+       <div class="logo" onclick="window.location.href='/'">
+            Sonde
+        </div>
+    <div class="links">
+           <a href="/history">History</a>
+            <a href="/api-doc">API</a>
+            <a href="/3d">KML</a>
+            <a href="/accounts/dash">Dashboard</a>
+            <a href="/burst">Burst</a>
+            <a href="/predict">Predict</a>
+            <a href="/report/submit">Report</a>
+            <a href="/faq">About</a>
+            <a href="https://github.com">GitHub</a>
+    </div>
+  </nav>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <h1>Balloon Burst Calculator</h1>
+    <div style="font-size:13px;color:#555">Based on CUSF burst1a maths</div>
+  </div>
+
+  <div class="card">
+    <h2>Inputs</h2>
+    <div class="g2">
+      <div>
+        <label for="mp">Payload mass (g)</label>
+        <div class="note">Include parachute and all attached items</div>
+        <input type="number" id="mp" value="1000" min="1" step="5"/>
+      </div>
+      <div>
+        <label for="mb">Balloon model</label>
+        <select id="mb">
+          <optgroup label="Kaymont">
+            <option value="k100">Kaymont 100g</option><option value="k150">Kaymont 150g</option>
+            <option value="k200">Kaymont 200g</option><option value="k300">Kaymont 300g</option>
+            <option value="k350">Kaymont 350g</option><option value="k600">Kaymont 600g</option>
+            <option value="k800">Kaymont 800g</option><option value="k1000" selected>Kaymont 1000g</option>
+            <option value="k1200">Kaymont 1200g</option><option value="k1500">Kaymont 1500g</option>
+            <option value="k1600">Kaymont 1600g</option><option value="k1800">Kaymont 1800g</option>
+            <option value="k2000">Kaymont 2000g</option><option value="k3000">Kaymont 3000g</option>
+            <option value="k4000">Kaymont 4000g</option>
+          </optgroup>
+          <optgroup label="Hwoyee">
+            <option value="h100">Hwoyee 100g</option><option value="h200">Hwoyee 200g</option>
+            <option value="h300">Hwoyee 300g</option><option value="h350">Hwoyee 350g</option>
+            <option value="h500">Hwoyee 500g</option><option value="h600">Hwoyee 600g</option>
+            <option value="h750">Hwoyee 750g</option><option value="h800">Hwoyee 800g</option>
+            <option value="h1000">Hwoyee 1000g</option><option value="h1200">Hwoyee 1200g</option>
+            <option value="h1600">Hwoyee 1600g</option><option value="h2000">Hwoyee 2000g</option>
+            <option value="h3000">Hwoyee 3000g</option>
+          </optgroup>
+          <optgroup label="Pawan">
+            <option value="p100">Pawan 100g</option><option value="p350">Pawan 350g</option>
+            <option value="p600">Pawan 600g</option><option value="p800">Pawan 800g</option>
+            <option value="p900">Pawan 900g</option><option value="p1200">Pawan 1200g</option>
+            <option value="p1600">Pawan 1600g</option><option value="p2000">Pawan 2000g</option>
+          </optgroup>
+        </select>
+      </div>
+    </div>
+    <div class="g2">
+      <div>
+        <label for="tba">Target burst altitude (m) <span style="font-weight:normal;color:#777">— leave blank to use ascent rate</span></label>
+        <input type="number" id="tba" placeholder="e.g. 30000" step="100"/>
+      </div>
+      <div>
+        <label for="tar">Target ascent rate (m/s)</label>
+        <div class="note">5 m/s recommended</div>
+        <input type="number" id="tar" value="5.0" step="0.1" min="0.5"/>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <details>
+      <summary>Constants (Advanced)</summary>
+      <div class="g3" style="margin-top:10px">
+        <div>
+          <label for="gas">Gas type</label>
+          <select id="gas">
+            <option value="0.1786">Helium</option>
+            <option value="0.0899">Hydrogen</option>
+            <option value="0.6672">Methane</option>
+            <option value="0.21">BOC Balloon Gas</option>
+            <option value="custom">Custom</option>
+          </select>
+          <label for="rho_g">Gas density (kg/m³)</label>
+          <input type="number" id="rho_g" value="0.1786" step="0.0001"/>
+        </div>
+        <div>
+          <label for="rho_a">Air density (kg/m³)</label>
+          <input type="number" id="rho_a" value="1.2050" step="0.001"/>
+          <label for="adm">Air density model</label>
+          <input type="number" id="adm" value="7238.3" step="1"/>
+          <label for="ga">Gravity (m/s²)</label>
+          <input type="number" id="ga" value="9.80665" step="0.00001"/>
+        </div>
+        <div>
+          <div class="cb"><input type="checkbox" id="bd_c"/><label for="bd_c">Override burst diameter (m)</label></div>
+          <input type="number" id="bd" value="7.86" step="0.1" disabled/>
+          <div class="cb" style="margin-top:8px"><input type="checkbox" id="cd_c"/><label for="cd_c">Override drag coefficient (Cd)</label></div>
+          <input type="number" id="cd" value="0.3" step="0.05" min="0.01" max="1" disabled/>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div style="margin-bottom:14px;display:flex;gap:8px">
+    <button class="btn" id="calcBtn">Calculate</button>
+    <button class="btn btn-o" id="resetBtn">Reset</button>
+  </div>
+
+  <div class="alert err" id="errBox"></div>
+  <div class="alert ok" id="okBox"></div>
+
+  <div class="card" id="resCard">
+    <h2>Results</h2>
+    <div class="g4" style="margin-bottom:16px">
+      <div class="res"><div class="rl">Burst altitude</div><div class="rv" id="r_ba">—</div><div class="ru">metres</div></div>
+      <div class="res"><div class="rl">Ascent rate</div><div class="rv" id="r_ar">—</div><div class="ru">m/s</div></div>
+      <div class="res"><div class="rl">Time to burst</div><div class="rv" id="r_ttb">—</div><div class="ru">minutes</div></div>
+      <div class="res"><div class="rl">Neck lift</div><div class="rv" id="r_nl">—</div><div class="ru">grams</div></div>
+    </div>
+    <div class="g3">
+      <div class="res"><div class="rl">Volume</div><div class="rv" id="r_vm3">—</div><div class="ru">m³</div></div>
+      <div class="res"><div class="rl">Volume</div><div class="rv" id="r_vl">—</div><div class="ru">litres</div></div>
+      <div class="res"><div class="rl">Volume</div><div class="rv" id="r_vcf">—</div><div class="ru">ft³</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>How to use</h2>
+    <p style="font-size:13px;line-height:1.7">Enter payload mass (parachute included), select your balloon. Set either a target ascent rate (recommended 5 m/s) or a target burst altitude — leave the other blank. Click Calculate. Use Constants to switch gas, or override burst diameter and Cd.</p>
+  </div>
+</div>
+
+<footer>Sonde © 2026 · Maths: CUSF burst1a by Steve Randall, implemented by Adam Greig.</footer>
+
+<script>
+const BD = {
+  k100:{bd:3.00,cd:0.3,mb:100},k150:{bd:3.78,cd:0.3,mb:150},k200:{bd:4.12,cd:0.3,mb:200},
+  k300:{bd:5.53,cd:0.3,mb:300},k350:{bd:5.60,cd:0.3,mb:350},k600:{bd:6.86,cd:0.3,mb:600},
+  k800:{bd:7.00,cd:0.3,mb:800},k1000:{bd:7.86,cd:0.3,mb:1000},k1200:{bd:8.63,cd:0.3,mb:1200},
+  k1500:{bd:9.44,cd:0.3,mb:1500},k1600:{bd:9.44,cd:0.3,mb:1600},k1800:{bd:9.44,cd:0.3,mb:1800},
+  k2000:{bd:10.54,cd:0.3,mb:2000},k3000:{bd:12.13,cd:0.3,mb:3000},k4000:{bd:13.00,cd:0.3,mb:4000},
+  h100:{bd:3.00,cd:0.3,mb:100},h200:{bd:4.12,cd:0.3,mb:200},h300:{bd:5.53,cd:0.3,mb:300},
+  h350:{bd:5.60,cd:0.3,mb:350},h500:{bd:6.00,cd:0.3,mb:500},h600:{bd:6.86,cd:0.3,mb:600},
+  h750:{bd:7.00,cd:0.3,mb:750},h800:{bd:7.00,cd:0.3,mb:800},h1000:{bd:7.86,cd:0.3,mb:1000},
+  h1200:{bd:8.63,cd:0.3,mb:1200},h1600:{bd:9.44,cd:0.3,mb:1600},h2000:{bd:10.54,cd:0.3,mb:2000},
+  h3000:{bd:12.13,cd:0.3,mb:3000},
+  p100:{bd:3.00,cd:0.3,mb:100},p350:{bd:5.60,cd:0.3,mb:350},p600:{bd:6.86,cd:0.3,mb:600},
+  p800:{bd:7.00,cd:0.3,mb:800},p900:{bd:7.40,cd:0.3,mb:900},p1200:{bd:8.63,cd:0.3,mb:1200},
+  p1600:{bd:9.44,cd:0.3,mb:1600},p2000:{bd:10.54,cd:0.3,mb:2000}
+};
+
+function g(id){return document.getElementById(id);}
+function sv(id,v){g(id).textContent=v;}
+
+g('gas').addEventListener('change',function(){
+  const c=this.value==='custom';
+  g('rho_g').disabled=!c;
+  if(!c)g('rho_g').value=this.value;
+});
+g('bd_c').addEventListener('change',function(){g('bd').disabled=!this.checked;});
+g('cd_c').addEventListener('change',function(){g('cd').disabled=!this.checked;});
+
+function showErr(m){const e=g('errBox'),o=g('okBox');e.textContent=m;e.style.display='block';o.style.display='none';}
+function showOk(m){const e=g('errBox'),o=g('okBox');o.textContent=m;o.style.display='block';e.style.display='none';}
+function hide(){g('errBox').style.display='none';g('okBox').style.display='none';}
+
+function getParams(){
+  const key=g('mb').value;
+  const bal=BD[key];
+  if(!bal)return null;
+  return {
+    mp:parseFloat(g('mp').value)/1000,
+    mb:bal.mb/1000,
+    rho_g:parseFloat(g('rho_g').value),
+    rho_a:parseFloat(g('rho_a').value),
+    adm:parseFloat(g('adm').value),
+    ga:parseFloat(g('ga').value),
+    bd:g('bd_c').checked?parseFloat(g('bd').value):bal.bd,
+    cd:g('cd_c').checked?parseFloat(g('cd').value):bal.cd
+  };
+}
+
+function burst_volume(bd){
+  const r=bd/2;
+  return (4/3)*Math.PI*r*r*r;
+}
+
+function burst_altitude(V_launch,V_burst,adm){
+  return adm*Math.log(V_burst/V_launch);
+}
+
+function ascent_rate(V,mp,mb,rho_a,rho_g,cd,ga){
+  const r=Math.pow(3*V/(4*Math.PI),1/3);
+  const A=Math.PI*r*r;
+  const buoy=(rho_a-rho_g)*V;
+  const gross_lift=buoy;
+  const payload_weight=(mp+mb)*ga;
+  const net_lift_N=gross_lift*ga-payload_weight;
+  if(net_lift_N<=0)return -1;
+  return Math.sqrt(2*net_lift_N/(rho_a*cd*A));
+}
+
+function solve_volume_for_rate(target_v,mp,mb,rho_a,rho_g,cd,ga){
+  const total_mass=mp+mb;
+  const rho_diff=rho_a-rho_g;
+  if(rho_diff<=0)return -1;
+  const v=target_v;
+  const A_coeff=rho_diff*ga;
+  const B_coeff=-(total_mass*ga+0.5*rho_a*cd*Math.PI*v*v*Math.pow(3/(4*Math.PI),2/3));
+  var lo=0.001,hi=1000;
+  for(var i=0;i<200;i++){
+    const mid=(lo+hi)/2;
+    const r=Math.pow(3*mid/(4*Math.PI),1/3);
+    const A=Math.PI*r*r;
+    const buoy=(rho_a-rho_g)*mid*ga;
+    const weight=(mp+mb)*ga;
+    const drag=0.5*rho_a*cd*A*v*v;
+    const net=buoy-weight-drag;
+    if(net>0)hi=mid; else lo=mid;
+    if(hi-lo<1e-9)break;
+  }
+  return (lo+hi)/2;
+}
+
+function display(ba,ar,V,mp,mb,rho_a,rho_g,bd,ga,adm){
+  const nl=(rho_a-rho_g)*V*1000;
+  const ttb=ba/ar/60;
+  sv('r_ba',(ba/1000).toFixed(2)+' km  /  '+Math.round(ba)+' m');
+  sv('r_ar',ar.toFixed(2));
+  sv('r_ttb',Math.round(ttb));
+  sv('r_nl',Math.round(nl));
+  sv('r_vm3',V.toFixed(3));
+  sv('r_vl',Math.round(V*1000));
+  sv('r_vcf',(V*35.3147).toFixed(1));
+  showOk('Done. Burst alt, neck lift and volume shown below.');
+}
+
+function calculate(){
+  hide();
+  const p=getParams();
+  if(!p){showErr('Unknown balloon.');return;}
+  if(isNaN(p.mp)||p.mp<=0){showErr('Invalid payload mass.');return;}
+  if(isNaN(p.rho_g)||p.rho_g<=0){showErr('Invalid gas density.');return;}
+  if(p.rho_g>=p.rho_a){showErr('Gas density must be less than air density.');return;}
+  const tba_str=g('tba').value.trim();
+  const tar=parseFloat(g('tar').value);
+  if(tba_str!==''){
+    const tba=parseFloat(tba_str);
+    if(isNaN(tba)||tba<=0||tba>50000){showErr('Burst altitude must be 1–50000 m.');return;}
+    const Vb=burst_volume(p.bd);
+    const V=Vb*Math.exp(-tba/p.adm);
+    if(V<=0){showErr('Cannot reach that altitude with this balloon.');return;}
+    const ar=ascent_rate(V,p.mp,p.mb,p.rho_a,p.rho_g,p.cd,p.ga);
+    if(ar<=0){showErr('Balloon cannot lift payload. Reduce mass or increase balloon size.');return;}
+    display(tba,ar,V,p.mp,p.mb,p.rho_a,p.rho_g,p.bd,p.ga,p.adm);
+  } else {
+    if(isNaN(tar)||tar<=0){showErr('Enter a valid ascent rate.');return;}
+    const V=solve_volume_for_rate(tar,p.mp,p.mb,p.rho_a,p.rho_g,p.cd,p.ga);
+    if(V<=0){showErr('No solution — try a lower ascent rate or larger balloon.');return;}
+    const Vb=burst_volume(p.bd);
+    if(V>=Vb){showErr('Balloon would burst before reaching target ascent rate. Use a larger balloon.');return;}
+    const ba=burst_altitude(V,Vb,p.adm);
+    display(ba,tar,V,p.mp,p.mb,p.rho_a,p.rho_g,p.bd,p.ga,p.adm);
+  }
+}
+
+g('calcBtn').addEventListener('click',calculate);
+g('resetBtn').addEventListener('click',function(){
+  g('mp').value='1000';g('mb').value='k1000';g('tba').value='';g('tar').value='5.0';
+  g('gas').value='0.1786';g('rho_g').value='0.1786';g('rho_a').value='1.2050';
+  g('adm').value='7238.3';g('ga').value='9.80665';
+  g('bd_c').checked=false;g('cd_c').checked=false;
+  g('bd').value='7.86';g('cd').value='0.3';
+  g('bd').disabled=true;g('cd').disabled=true;
+  ['r_ba','r_ar','r_ttb','r_nl','r_vm3','r_vl','r_vcf'].forEach(id=>sv(id,'—'));
+  hide();
+});
+
+calculate();
+</script>

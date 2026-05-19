@@ -1,0 +1,766 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sonde — Flight Predictor</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="icon" href="/static/tracker/ballon.png" type="image/png">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#fff;color:#000;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+#nav{border-bottom:1px solid #000;padding:10px 0;flex-shrink:0;background:#fff;z-index:10}
+.navbar{max-width:1100px;margin:auto;display:flex;justify-content:space-between;align-items:center;padding:0 10px}
+.logo{font-weight:bold;font-size:18px;cursor:pointer;text-decoration:none;color:#000}
+.links a{text-decoration:none;color:#000;margin-left:15px;font-size:14px}
+.links a:hover{text-decoration:underline}
+.links a.active{font-weight:bold;text-decoration:underline}
+#page-body{flex:1;min-height:0;display:flex;overflow:hidden}
+#sidebar{width:310px;flex-shrink:0;border-right:1px solid #000;display:flex;flex-direction:column;overflow-y:auto;background:#fff}
+.sidebar-header{border-bottom:1px solid #000;padding:10px 12px;font-size:13px;font-weight:bold;background:#000;color:#fff;flex-shrink:0}
+.section{border-bottom:1px solid #000;padding:12px}
+.section-title{font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.08em;color:#555;margin-bottom:8px}
+label{display:block;font-size:12px;color:#555;margin-bottom:2px;margin-top:8px}
+label:first-of-type{margin-top:0}
+input[type=text],input[type=number],select{width:100%;border:1px solid #000;padding:5px 8px;font-size:13px;font-family:Arial,sans-serif;background:#fff;color:#000;outline:none}
+input[type=text]:focus,input[type=number]:focus,select:focus{background:#000;color:#fff}
+select option{background:#fff;color:#000}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{border:1px solid #000;background:#fff;color:#000;padding:6px 12px;font-size:13px;cursor:pointer;font-family:Arial,sans-serif;width:100%;margin-top:8px}
+.btn:hover{background:#000;color:#fff}
+.btn.primary{background:#000;color:#fff}
+.btn.primary:hover{background:#333}
+.btn-row{display:flex;gap:6px}
+.btn-row .btn{margin-top:0}
+.btn-sm{border:1px solid #000;background:#fff;color:#000;padding:4px 8px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif}
+.btn-sm:hover{background:#000;color:#fff}
+#stats-strip{border-bottom:1px solid #000;display:grid;grid-template-columns:repeat(4,1fr);flex-shrink:0;background:#fff}
+.stat-cell{padding:8px 10px;border-right:1px solid #000}
+.stat-cell:last-child{border-right:none}
+.stat-label{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.06em}
+.stat-val{font-size:15px;font-weight:bold;margin-top:2px;font-variant-numeric:tabular-nums}
+#map-area{flex:1;display:flex;flex-direction:column;min-width:0}
+#toolbar-strip{border-bottom:1px solid #000;padding:7px 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;flex-shrink:0}
+.toolbar-label{font-size:13px;font-weight:bold}
+#map{flex:1;min-height:0;width:100%}
+#status-bar{border-top:1px solid #000;padding:5px 10px;font-size:11px;color:#555;background:#fff;flex-shrink:0;display:flex;align-items:center;gap:10px}
+#status-dot{width:7px;height:7px;border-radius:50%;background:#555;flex-shrink:0}
+#status-dot.running{background:#000;animation:pulse .8s infinite alternate}
+#status-dot.ok{background:#000}
+#status-dot.err{background:#000}
+@keyframes pulse{from{opacity:.3}to{opacity:1}}
+.saved-item{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #eee;font-size:12px;cursor:pointer}
+.saved-item:hover{background:#f5f5f5;margin:0 -12px;padding:5px 12px}
+.saved-item-name{font-weight:bold}
+.saved-item-coords{color:#555;font-size:11px}
+.no-saved{font-size:12px;color:#aaa;text-align:center;padding:10px 0}
+#wpt-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
+#wpt-table th{text-align:left;color:#555;border-bottom:1px solid #000;padding:3px 4px;font-weight:normal;font-size:10px;text-transform:uppercase}
+#wpt-table td{padding:3px 4px;border-bottom:1px solid #eee}
+.wpt-scroll{max-height:160px;overflow-y:auto;border:1px solid #000;margin-top:6px}
+.model-badge{border:1px solid #000;font-size:10px;padding:2px 6px;display:inline-block}
+footer{border-top:1px solid #000;text-align:center;padding:6px 15px;font-size:11px;flex-shrink:0;background:#fff}
+
+@media (max-width: 900px){
+
+  body{
+    overflow:auto;
+    height:auto;
+  }
+
+  #page-body{
+    flex-direction:column;
+    height:auto;
+    overflow:visible;
+  }
+
+  /* MAP FIRST */
+  #map-area{
+    order:1;
+    width:100%;
+    min-height:55vh;
+    height:55vh;
+    border-bottom:1px solid #000;
+  }
+
+  #map{
+    height:100%;
+    min-height:300px;
+  }
+
+  /* DETAILS BELOW */
+  #sidebar{
+    order:2;
+    width:100%;
+    border-right:none;
+    border-top:1px solid #000;
+    overflow:visible;
+  }
+
+  /* STATS */
+  #stats-strip{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .stat-cell{
+    border-bottom:1px solid #000;
+  }
+
+  .navbar{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:8px;
+  }
+
+  .links{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  .links a{
+    margin-left:0;
+    font-size:12px;
+  }
+
+  #toolbar-strip{
+    gap:6px;
+    padding:6px;
+  }
+
+  #toolbar-strip .btn-sm{
+    font-size:11px;
+    padding:4px 6px;
+  }
+
+  .toolbar-label{
+    width:100%;
+  }
+  .row2{
+    grid-template-columns:1fr;
+  }
+
+  .btn-row{
+    flex-direction:column;
+  }
+
+  .btn-row .btn,
+  .btn-row .btn-sm{
+    width:100%;
+  }
+
+  .wpt-scroll{
+    max-height:220px;
+  }
+
+  footer{
+    font-size:10px;
+    padding:8px;
+  }
+}
+
+@media (max-width: 500px){
+
+  #map-area{
+    height:50vh;
+    min-height:50vh;
+  }
+
+  #stats-strip{
+    grid-template-columns:1fr;
+  }
+
+  .stat-cell{
+    border-right:none;
+  }
+
+  .section{
+    padding:10px;
+  }
+
+  input[type=text],
+  input[type=number],
+  select{
+    font-size:16px; /* prevents zoom on iPhone */
+  }
+
+  .btn{
+    font-size:14px;
+  }
+
+  #cursor-pos{
+    display:none;
+  }
+
+  #toolbar-strip{
+    justify-content:flex-start;
+  }
+
+  .sidebar-header{
+    font-size:12px;
+  }
+}
+
+.leaflet-control-zoom a{border-radius:0!important;border:1px solid #000!important}
+.leaflet-popup-content-wrapper{border-radius:0;border:1px solid #000}
+.leaflet-popup-tip{display:none}
+</style>
+</head>
+<body>
+
+<div id="nav">
+  <nav class="navbar">
+    <a class="logo" href="/">Sonde</a>
+    <div class="links">
+       <a href="/history">History</a>
+            <a href="/api-doc">API</a>
+            <a href="/3d">KML</a>
+            <a href="/accounts/dash">Dashboard</a>
+<a href="/burst">Burst</a>
+            <a href="/predict">Predict</a>
+            <a href="/report/submit">Report</a>
+            <a href="/faq">About</a>
+            <a href="https://github.com">GitHub</a>
+    </div>
+  </nav>
+</div>
+
+<div id="page-body">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-header">Launch Parameters</div>
+
+    <!-- LAUNCH SITE -->
+    <div class="section">
+      <div class="section-title">Launch Site</div>
+      <label>Site Name</label>
+      <input type="text" id="siteName" placeholder="e.g. Kathmandu Launch Site">
+      <label>Latitude (°)</label>
+      <input type="number" id="lat" value="27.7172" step="0.0001">
+      <label>Longitude (°)</label>
+      <input type="number" id="lon" value="85.3240" step="0.0001">
+      <label>Altitude (m ASL)</label>
+      <input type="number" id="alt" value="1400" step="1">
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn btn-sm" onclick="setFromMap()">Set from Map</button>
+        <button class="btn btn-sm" onclick="saveLocation()">Save</button>
+      </div>
+    </div>
+
+    <!-- TIME -->
+    <div class="section">
+      <div class="section-title">Launch Time (UTC)</div>
+      <label>Date</label>
+      <input type="text" id="launchDate" placeholder="YYYY-MM-DD">
+      <label>Time (HH:MM)</label>
+      <input type="text" id="launchTime" placeholder="00:00">
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn btn-sm" onclick="setNow()">Now (UTC)</button>
+        <button class="btn btn-sm" onclick="setNow(1)">+1 h</button>
+        <button class="btn btn-sm" onclick="setNow(3)">+3 h</button>
+      </div>
+    </div>
+
+    <!-- BALLOON PARAMS -->
+    <div class="section">
+      <div class="section-title">Balloon Parameters</div>
+      <label>Flight Profile</label>
+      <select id="profile">
+        <option value="standard_profile">Standard (Ascent + Descent)</option>
+        <option value="float_profile">Float</option>
+        <option value="reverse_profile">Reverse (Descent only)</option>
+      </select>
+      <div class="row2">
+        <div>
+          <label>Ascent Rate (m/s)</label>
+          <input type="number" id="ascentRate" value="5.0" step="0.1" min="0.5" max="20">
+        </div>
+        <div>
+          <label>Descent Rate (m/s)</label>
+          <input type="number" id="descentRate" value="5.0" step="0.1" min="0.5" max="20">
+        </div>
+      </div>
+      <label>Burst Altitude (m)</label>
+      <input type="number" id="burstAlt" value="30000" step="100" min="1000" max="50000">
+      <div id="float-fields" style="display:none">
+        <label>Float Altitude (m)</label>
+        <input type="number" id="floatAlt" value="20000" step="100">
+        <label>Float Duration (hours)</label>
+        <input type="number" id="floatDur" value="2" step="0.5" min="0.5">
+      </div>
+    </div>
+
+    
+
+    <!-- PREDICTION TYPE -->
+    <div class="section">
+      <div class="section-title">Prediction Mode</div>
+      <label>Type</label>
+      <select id="predType">
+        <option value="single">Single</option>
+        <option value="hourly">Hourly (next 24h)</option>
+        <option value="3hourly">3-Hourly</option>
+        <option value="6hourly">6-Hourly</option>
+        <option value="12hourly">12-Hourly</option>
+        <option value="daily">Daily</option>
+      </select>
+      <button class="btn primary" onclick="runPrediction()" style="margin-top:10px">▶ Run Prediction</button>
+      <button class="btn" onclick="clearPrediction()" style="margin-top:4px">✕ Clear</button>
+    </div>
+
+    <!-- SAVED LOCATIONS -->
+    <div class="section">
+      <div class="section-title">Saved Locations</div>
+      <div id="saved-list"><p class="no-saved">No saved locations</p></div>
+    </div>
+
+    <!-- WAYPOINT TABLE -->
+    <div class="section" id="wpt-section" style="display:none">
+      <div class="section-title" style="display:flex;justify-content:space-between">
+        <span>Trajectory Waypoints</span>
+        <span id="wpt-count" style="font-size:11px;color:#555"></span>
+      </div>
+      <div class="wpt-scroll">
+        <table id="wpt-table">
+          <thead><tr><th>#</th><th>Lat</th><th>Lon</th><th>Alt(m)</th><th>Time(s)</th></tr></thead>
+          <tbody id="wpt-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAP AREA -->
+  <div id="map-area">
+    <div id="stats-strip">
+      <div class="stat-cell"><div class="stat-label">Max Altitude</div><div class="stat-val" id="s-alt">—</div></div>
+      <div class="stat-cell"><div class="stat-label">Flight Time</div><div class="stat-val" id="s-time">—</div></div>
+      <div class="stat-cell"><div class="stat-label">Range (km)</div><div class="stat-val" id="s-range">—</div></div>
+      <div class="stat-cell"><div class="stat-label">GFS Model</div><div class="stat-val" id="s-model" style="font-size:11px;padding-top:4px">—</div></div>
+    </div>
+
+    <div id="toolbar-strip">
+      <span class="toolbar-label">Flight Predictor</span>
+      <span style="flex:1"></span>
+      <span id="cursor-pos" style="font-size:11px;color:#555;font-variant-numeric:tabular-nums">Lat: — &nbsp; Lon: —</span>
+      <button class="btn-sm" onclick="flyToLaunch()">Pan to Launch</button>
+      <button class="btn-sm" onclick="flyToLanding()">Pan to Landing</button>
+      <button class="btn-sm" onclick="exportCSV()">CSV</button>
+      <button class="btn-sm" onclick="exportKML()">KML</button>
+    </div>
+
+    <div id="map"></div>
+
+    <div id="status-bar">
+      <div id="status-dot"></div>
+      <span id="status-msg">Ready — enter parameters and press Run Prediction</span>
+      <span style="flex:1"></span>
+      <span style="font-size:10px;color:#aaa">Tawhiri API</span>
+    </div>
+  </div>
+
+</div>
+
+<footer>Sonde © 2026 &nbsp;|&nbsp; Predictor — Built on <a href="https://github.com/projecthorus/tawhiri" target="_blank" style="color:#000">Tawhiri / SondeHub API</a></footer>
+
+<script>
+const TAWHIRI = 'https://sonde.kushal-kc.com.np/predict_prox';
+let map=  L.map('map').setView([27.682, 85.2881], 11), launchMarker, landMarker, trajectoryLayer=null, multiLayers=[];
+let lastTrajectory=null, lastLandingLL=null;
+let burstLatLng = null;
+let burstAlt = 0;
+let pickingFromMap=false;
+let savedLocations = JSON.parse(localStorage.getItem('sonde_locs')||'[]');
+
+/* ─── MAP INIT ─── */
+
+
+let baseMaps = {
+    "Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' }),
+    "Topo": L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopoMap' }),
+    "Dark": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CartoDB' }),
+    "Light": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© CartoDB' }),
+    "Esri Topo": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' }),
+    "Esri Street": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' }),
+};
+
+baseMaps["Satellite"].addTo(map); // THEN add to map
+
+L.control.layers(baseMaps, null, { position: 'bottomright' }).addTo(map);
+
+
+const launchIcon = L.icon({
+    iconUrl: "{% static 'tracker/station.png' %}",
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+});
+
+let landIcon = L.icon({
+    iconUrl: "{% static 'tracker/ballon.png' %}",
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+});
+
+let burstMarker = null;
+let ascentIcon = L.icon({
+    iconUrl: "{% static 'tracker/blast.png' %}",
+    iconSize: [30, 30],
+    iconAnchor: [10, 10],
+});
+
+map.on('mousemove',e=>{
+  document.getElementById('cursor-pos').textContent=`Lat: ${e.latlng.lat.toFixed(4)}  Lon: ${e.latlng.lng.toFixed(4)}`;
+});
+map.on('click',e=>{
+  if(pickingFromMap){
+    document.getElementById('lat').value=e.latlng.lat.toFixed(4);
+    document.getElementById('lon').value=e.latlng.lng.toFixed(4);
+    pickingFromMap=false;
+    map.getContainer().style.cursor='';
+    setStatus('Launch location set from map','ok');
+    updateLaunchMarker();
+  }
+});
+
+/* ─── UTILS ─── */
+function setStatus(msg,state=''){
+  document.getElementById('status-msg').textContent=msg;
+  const d=document.getElementById('status-dot');
+  d.className=state;
+}
+function utcNow(offsetH=0){
+  const d=new Date(Date.now()+offsetH*3600000);
+  const pad=n=>String(n).padStart(2,'0');
+  return {
+    date:`${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`,
+    time:`${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`
+  };
+}
+function setNow(offsetH=0){
+  const t=utcNow(offsetH);
+  document.getElementById('launchDate').value=t.date;
+  document.getElementById('launchTime').value=t.time;
+}
+function haversineKm(lat1,lon1,lat2,lon2){
+  const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+/* ─── INIT TIME ─── */
+setNow();
+
+/* ─── PROFILE TOGGLE ─── */
+document.getElementById('profile').addEventListener('change',function(){
+  document.getElementById('float-fields').style.display=this.value==='float_profile'?'block':'none';
+});
+
+/* ─── MAP MARKER ─── */
+function updateLaunchMarker(){
+  const lat=parseFloat(document.getElementById('lat').value)||27.7172;
+  const lon=parseFloat(document.getElementById('lon').value)||85.3240;
+  if(launchMarker) launchMarker.remove();
+  launchMarker=L.marker([lat,lon],{icon:launchIcon,draggable:true}).addTo(map);
+  launchMarker.on('dragend',e=>{
+    const p=e.target.getLatLng();
+    document.getElementById('lat').value=p.lat.toFixed(4);
+    document.getElementById('lon').value=p.lng.toFixed(4);
+  });
+}
+updateLaunchMarker();
+['lat','lon'].forEach(id=>document.getElementById(id).addEventListener('change',updateLaunchMarker));
+
+function setFromMap(){
+  pickingFromMap=true;
+  map.getContainer().style.cursor='crosshair';
+  setStatus('Click on the map to set launch location…');
+}
+function flyToLaunch(){
+  const lat=parseFloat(document.getElementById('lat').value)||27.7172;
+  const lon=parseFloat(document.getElementById('lon').value)||85.3240;
+  map.flyTo([lat,lon],10);
+}
+function flyToLanding(){
+  if(lastLandingLL) map.flyTo(lastLandingLL,10);
+  else setStatus('No landing predicted yet');
+}
+
+/* ─── BUILD TAWHIRI URL ─── */
+function buildURL(latF,lonF,altF,dateStr,timeStr,ascentR,burstA,descentR,profile){
+  const [yy,mm,dd]=dateStr.split('-');
+  const [hh,mn]=timeStr.split(':');
+  const launchDT=`${yy}-${mm}-${dd}T${hh}:${mn}:00Z`;
+  let url=`${TAWHIRI}?launch_latitude=${latF}&launch_longitude=${lonF}&launch_altitude=${altF}&launch_datetime=${encodeURIComponent(launchDT)}&ascent_rate=${ascentR}&burst_altitude=${burstA}&descent_rate=${descentR}&profile=${profile}&format=json`;
+  return url;
+}
+
+/* ─── MAIN PREDICTION ─── */
+async function runPrediction(){
+  clearPrediction();
+  const lat=parseFloat(document.getElementById('lat').value);
+  const lon=parseFloat(document.getElementById('lon').value);
+  const alt=parseFloat(document.getElementById('alt').value);
+  const dateStr=document.getElementById('launchDate').value;
+  const timeStr=document.getElementById('launchTime').value;
+  const ascent=parseFloat(document.getElementById('ascentRate').value);
+  const burst=parseFloat(document.getElementById('burstAlt').value);
+  const descent=parseFloat(document.getElementById('descentRate').value);
+  const profile=document.getElementById('profile').value;
+  const predType=document.getElementById('predType').value;
+
+  if(!dateStr||!timeStr){setStatus('Please set launch date and time','err');return;}
+  if(isNaN(lat)||isNaN(lon)){setStatus('Invalid coordinates','err');return;}
+
+  if(predType==='single'){
+    await fetchAndPlot(lat,lon,alt,dateStr,timeStr,ascent,burst,descent,profile,'#ff0000',true);
+  } else {
+    const intervals={'hourly':1,'3hourly':3,'6hourly':6,'12hourly':12,'daily':24};
+    const step=intervals[predType]||3;
+    const count=predType==='daily'?7:Math.floor(24/step);
+    const grays = [
+  '#ff0000', // red
+  '#ff7a00', // orange
+  '#ffd000', // yellow
+  '#00ff4c', // neon green
+  '#00e5ff', // cyan
+  '#2f6bff', // blue
+  '#b400ff'  // purple
+];
+    setStatus(`Running ${count} predictions…`,'running');
+    for(let i=0;i<Math.min(count,7);i++){
+      const offsetMs=i*step*3600000;
+      const d=new Date(new Date(`${dateStr}T${timeStr}:00Z`).getTime()+offsetMs);
+      const pad=n=>String(n).padStart(2,'0');
+      const ds=`${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`;
+      const ts=`${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+      await fetchAndPlot(lat,lon,alt,ds,ts,ascent,burst,descent,profile,grays[i],i===0);
+    }
+    setStatus(`${Math.min(count,7)} predictions complete`,'ok');
+  }
+}
+
+async function fetchAndPlot(lat,lon,alt,dateStr,timeStr,ascent,burst,descent,profile,color,isPrimary){
+  const url=buildURL(lat,lon,alt,dateStr,timeStr,ascent,burst,descent,profile);
+  if(isPrimary) setStatus('Fetching prediction from Tawhiri API…','running');
+  try{
+    const res=await fetch(url);
+    if(!res.ok){
+      const err=await res.json().catch(()=>({}));
+      setStatus('API error: '+(err.error||err.message||res.statusText),'err');
+      return;
+    }
+    const data=await res.json();
+    plotTrajectory(data,lat,lon,color,isPrimary,dateStr,timeStr);
+  }catch(e){
+    setStatus('Network error: '+e.message,'err');
+  }
+}
+
+function plotTrajectory(data,launchLat,launchLon,color,isPrimary,dateStr,timeStr){
+  const stages=data.prediction||[];
+  if(!stages.length){setStatus('No prediction data returned','err');return;}
+
+  burstLatLng = null;
+burstAlt = 0;
+
+  let allPoints=[], maxAlt=0, flightSec=0;
+  let landPt=null;
+
+  stages.forEach((stage, idx)=>{
+  (stage.trajectory||[]).forEach(pt=>{
+    allPoints.push([
+      pt.latitude,
+      pt.longitude,
+      pt.altitude,
+      pt.datetime
+    ]);
+
+    if(pt.altitude > maxAlt) maxAlt = pt.altitude;
+    landPt = pt;
+  });
+
+  if(idx === 0 && stage.trajectory && stage.trajectory.length > 0){
+    const last = stage.trajectory[stage.trajectory.length - 1];
+    burstLatLng = [last.latitude, last.longitude];
+    burstAlt = last.altitude;
+  }
+});
+
+  if(!allPoints.length) return;
+
+  const latlngs=allPoints.map(p=>[p[0],p[1]]);
+  const layer=L.polyline(latlngs,{color,weight:isPrimary?2.5:1.5,opacity:isPrimary?1:0.5}).addTo(map);
+  multiLayers.push(layer);
+
+  if(isPrimary){
+    lastTrajectory={data,allPoints,launchLat,launchLon,dateStr,timeStr};
+    lastLandingLL=[landPt.latitude,landPt.longitude];
+
+    if(burstMarker){ burstMarker.remove(); }
+
+if(burstLatLng){
+  burstMarker = L.marker(burstLatLng, {icon: ascentIcon})
+    .addTo(map)
+    .bindPopup(
+      `<b>Burst Point</b><br>Lat: ${burstLatLng[0].toFixed(4)}<br>
+       Lon: ${burstLatLng[1].toFixed(4)}<br>
+       Alt: ${Math.round(burstAlt)} m`
+    );
+}
+
+    if(landMarker) landMarker.remove();
+    landMarker=L.marker([landPt.latitude,landPt.longitude],{icon:landIcon}).addTo(map)
+      .bindPopup(`<b>Landing</b><br>Lat: ${landPt.latitude.toFixed(4)}<br>Lon: ${landPt.longitude.toFixed(4)}<br>Alt: ${Math.round(landPt.altitude)} m`);
+    updateLaunchMarker();
+
+    const first=allPoints[0], last=allPoints[allPoints.length-1];
+    const t1=new Date(first[3]), t2=new Date(last[3]);
+    flightSec=(t2-t1)/1000;
+    const rangeKm=haversineKm(launchLat,launchLon,landPt.latitude,landPt.longitude);
+
+    document.getElementById('s-alt').textContent=Math.round(maxAlt).toLocaleString()+' m';
+    document.getElementById('s-time').textContent=formatDuration(flightSec);
+    document.getElementById('s-range').textContent=rangeKm.toFixed(1);
+    document.getElementById('s-model').textContent=data.metadata?.dataset||'GFS';
+
+    populateWaypoints(allPoints);
+    map.fitBounds(layer.getBounds(),{padding:[30,30]});
+    setStatus(`Prediction complete — Landing: ${landPt.latitude.toFixed(4)}, ${landPt.longitude.toFixed(4)}`,'ok');
+  }
+}
+
+function formatDuration(sec){
+  const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60);
+  return h>0?`${h}h ${m}m`:`${m}m`;
+}
+
+function populateWaypoints(pts){
+  const sec=document.getElementById('wpt-section');
+  const body=document.getElementById('wpt-body');
+  sec.style.display='block';
+  document.getElementById('wpt-count').textContent=pts.length+' pts';
+  const step=Math.max(1,Math.floor(pts.length/30));
+  body.innerHTML='';
+  const t0=new Date(pts[0][3]);
+  pts.filter((_,i)=>i%step===0||i===pts.length-1).forEach((p,i)=>{
+    const dt=(new Date(p[3])-t0)/1000;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${i+1}</td><td>${p[0].toFixed(3)}</td><td>${p[1].toFixed(3)}</td><td>${Math.round(p[2])}</td><td>${Math.round(dt)}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+function clearPrediction(){
+  if(trajectoryLayer){trajectoryLayer.remove();trajectoryLayer=null;}
+  if(burstMarker){ burstMarker.remove(); burstMarker=null; }
+burstLatLng = null;
+burstAlt = 0;
+  multiLayers.forEach(l=>l.remove());
+  multiLayers=[];
+  if(landMarker){landMarker.remove();landMarker=null;}
+  lastTrajectory=null;lastLandingLL=null;
+  document.getElementById('s-alt').textContent='—';
+  document.getElementById('s-time').textContent='—';
+  document.getElementById('s-range').textContent='—';
+  document.getElementById('s-model').textContent='—';
+  document.getElementById('wpt-section').style.display='none';
+
+  setStatus('Cleared');
+}
+
+function renderSaved(){
+  const el=document.getElementById('saved-list');
+  if(!savedLocations.length){el.innerHTML='<p class="no-saved">No saved locations</p>';return;}
+  el.innerHTML=savedLocations.map((s,i)=>`
+    <div class="saved-item" onclick="loadSaved(${i})">
+      <div>
+        <div class="saved-item-name">${s.name||'Unnamed'}</div>
+        <div class="saved-item-coords">${s.lat.toFixed(3)}, ${s.lon.toFixed(3)} · ${s.alt} m</div>
+      </div>
+      <button class="btn-sm" onclick="event.stopPropagation();deleteSaved(${i})">✕</button>
+    </div>`).join('');
+}
+function saveLocation(){
+  const name=document.getElementById('siteName').value||'Site '+Date.now();
+  const lat=parseFloat(document.getElementById('lat').value);
+  const lon=parseFloat(document.getElementById('lon').value);
+  const alt=parseFloat(document.getElementById('alt').value);
+  if(isNaN(lat)||isNaN(lon)){setStatus('Invalid coords to save','err');return;}
+  savedLocations.push({name,lat,lon,alt});
+  localStorage.setItem('sonde_locs',JSON.stringify(savedLocations));
+  renderSaved();
+  setStatus('Location saved: '+name,'ok');
+}
+function loadSaved(i){
+  const s=savedLocations[i];
+  document.getElementById('siteName').value=s.name;
+  document.getElementById('lat').value=s.lat;
+  document.getElementById('lon').value=s.lon;
+  document.getElementById('alt').value=s.alt;
+  updateLaunchMarker();
+  map.flyTo([s.lat,s.lon],10);
+}
+function deleteSaved(i){
+  savedLocations.splice(i,1);
+  localStorage.setItem('sonde_locs',JSON.stringify(savedLocations));
+  renderSaved();
+}
+renderSaved();
+
+/* ─── EXPORT CSV ─── */
+function exportCSV(){
+  if(!lastTrajectory){setStatus('No prediction to export','err');return;}
+  const pts=lastTrajectory.allPoints;
+  const rows=['Index,Latitude,Longitude,Altitude_m,Datetime'];
+  pts.forEach((p,i)=>rows.push(`${i},${p[0].toFixed(6)},${p[1].toFixed(6)},${Math.round(p[2])},${p[3]}`));
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`sonde_prediction_${lastTrajectory.dateStr}_${lastTrajectory.timeStr.replace(':','')}.csv`;
+  a.click();
+  setStatus('CSV exported','ok');
+}
+
+/* ─── EXPORT KML ─── */
+function exportKML(){
+  if(!lastTrajectory){setStatus('No prediction to export','err');return;}
+  const pts=lastTrajectory.allPoints;
+  const coords=pts.map(p=>`${p[1]},${p[0]},${Math.round(p[2])}`).join('\n');
+  const kml=`<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Sonde Prediction ${lastTrajectory.dateStr} ${lastTrajectory.timeStr} UTC</name>
+    <description>Generated by Sonde Nepal Predictor · Tawhiri API</description>
+    <Style id="launchPath">
+      <LineStyle><color>ff000000</color><width>2</width></LineStyle>
+    </Style>
+    <Placemark>
+      <name>Launch</name>
+      <Point><coordinates>${lastTrajectory.launchLon},${lastTrajectory.launchLat},${document.getElementById('alt').value}</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>Landing</name>
+      <Point><coordinates>${lastTrajectory.allPoints[pts.length-1][1]},${lastTrajectory.allPoints[pts.length-1][0]},${Math.round(lastTrajectory.allPoints[pts.length-1][2])}</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>Trajectory</name>
+      <styleUrl>#launchPath</styleUrl>
+      <LineString>
+        <altitudeMode>absolute</altitudeMode>
+        <coordinates>${coords}</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>`;
+  const blob=new Blob([kml],{type:'application/vnd.google-earth.kml+xml'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`sonde_prediction_${lastTrajectory.dateStr}_${lastTrajectory.timeStr.replace(':','')}.kml`;
+  a.click();
+  setStatus('KML exported','ok');
+}
+</script>
+</body>
+</html>

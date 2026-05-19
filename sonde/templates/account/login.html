@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Login</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #fff;
+}
+
+.box {
+    width: 360px;
+    margin: 100px auto;
+    border: 1px solid #000;
+    padding: 20px;
+}
+
+h2 {
+    text-align: center;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border: 1px solid #000;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background: #000;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
+
+button.google {
+    background: #fff;
+    color: #000;
+    border: 1px solid #000;
+    margin-top: 8px;
+}
+
+a {
+    color: #000;
+    font-size: 12px;
+    text-decoration: none;
+}
+
+hr {
+    margin: 15px 0;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+
+    <h2>Sign In</h2>
+
+    <form method="POST" action="">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <button type="submit">Login</button>
+    </form>
+
+    <hr>
+
+    <p style="text-align:center; font-size:12px;">Or continue with</p>
+
+    <a href="/accounts/google/login/?process=login">
+        <button type="button" class="google">
+            Continue with Google
+        </button>
+    </a>
+
+    <hr>
+
+    <p style="text-align:center; font-size:12px;">
+        No account?
+        <a href="/accounts/signup/">Sign up</a>
+    </p>
+
+</div>
+
+</body>
+</html>

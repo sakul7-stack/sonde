@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<link rel="icon" href="/static/tracker/ballon.png" type="image/png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Submit Report</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #fff;
+    color: #000;
+}
+
+/* NAVBAR */
+#nav {
+    border-bottom: 1px solid #000;
+    padding: 10px 0;
+}
+
+.navbar {
+    max-width: 900px;
+    margin: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+}
+
+.logo {
+    font-weight: bold;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.links a {
+    text-decoration: none;
+    color: #000;
+    margin-left: 15px;
+    font-size: 14px;
+}
+
+.links a:hover {
+    text-decoration: underline;
+}
+
+/* FORM */
+.container {
+    max-width: 500px;
+    margin: 40px auto;
+    padding: 10px;
+}
+
+.card {
+    border: 1px solid #000;
+    padding: 20px;
+}
+
+h2 {
+    margin-top: 0;
+    font-size: 18px;
+}
+
+/* INPUTS */
+input, textarea {
+    width: 100%;
+    padding: 8px;
+    margin: 6px 0 12px 0;
+    border: 1px solid #000;
+    background: #fff;
+    color: #000;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #000;
+    background: #fff;
+    color: #000;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #000;
+    color: #fff;
+}
+</style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div id="nav">
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='/'">
+            Sonde 
+        </div>
+
+        <div class="links">
+ <a href="/history">History</a>
+            <a href="/api-doc">API</a>
+
+<a href="/3d">KML</a>
+            <a href="/accounts/dash">Dashboard</a>
+
+<a href="/burst">Burst</a>
+<a href="/predict">Predict</a>
+            <a href="/report/submit">Report</a>
+            <a href="/faq">About</a>
+            <a href="https://github.com">GitHub</a>
+        </div>
+    </nav>
+</div>
+
+<div class="container">
+    <div class="card">
+
+        <h2>Submit Report</h2>
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <label>Email</label>
+            {{ form.email }}
+
+            <label>Phone</label>
+            {{ form.phone }}
+
+            <label>Latitude</label>
+            {{ form.lat }}
+
+            <label>Longitude</label>
+            {{ form.lon }}
+
+            <label>Photo</label>
+            {{ form.photo }}
+
+            <label>Note</label>
+            {{ form.note }}
+
+            <button type="submit">Submit</button>
+        </form>
+
+    </div>
+</div>
+
+</body>
+</html>

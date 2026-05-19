@@ -1,0 +1,268 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="{% static 'tracker/ballon.png' %}" type="image/png">
+<title>FAQ - Sonde </title>
+
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #fff;
+        color: #000;
+    }
+
+    #nav {
+        border-bottom: 1px solid #000;
+        padding: 10px 0;
+    }
+
+    .navbar {
+        max-width: 900px;
+        margin: auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 10px;
+    }
+
+    .logo {
+        font-weight: bold;
+        font-size: 18px;
+        cursor: pointer;
+    }
+
+    .links a {
+        text-decoration: none;
+        color: #000;
+        margin-left: 15px;
+        font-size: 14px;
+    }
+
+    .links a:hover {
+        text-decoration: underline;
+    }
+
+    /* CONTENT */
+    .container {
+        max-width: 900px;
+        margin: 30px auto;
+        padding: 10px;
+    }
+
+    .card {
+        border: 1px solid #000;
+        padding: 20px;
+        margin-bottom: 15px;
+    }
+
+    h1 {
+        font-size: 20px;
+        margin-bottom: 5px;
+    }
+
+    h2 {
+        font-size: 16px;
+        margin-bottom: 15px;
+    }
+
+    .faq-item {
+        margin-bottom: 15px;
+        border-top: 1px solid #000;
+        padding-top: 10px;
+    }
+
+    .question {
+        font-weight: bold;
+        cursor: pointer;
+        margin-bottom: 5px;
+    }
+
+    .answer {
+        display: none;
+        margin-left: 10px;
+        font-size: 14px;
+    }
+
+    ul, ol {
+        padding-left: 20px;
+    }
+
+    footer {
+        border-top: 1px solid #000;
+        text-align: center;
+        padding: 15px;
+        margin-top: 20px;
+        font-size: 12px;
+    }
+</style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div id="nav">
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='/'">
+            Sonde
+        </div>
+
+        <div class="links">
+ <a href="/history">History</a>
+            <a href="/api-doc">API</a>
+
+<a href="/3d">KML</a>
+            <a href="/accounts/dash">Dashboard</a>
+<a href="/burst">Burst</a>
+<a href="/predict">Predict</a>
+            <a href="/report/submit">Report</a>
+            <a href="/faq">About</a>
+            <a href="https://github.com">GitHub</a>
+        </div>
+    </nav>
+</div>
+
+<div class="container">
+
+    <div class="card">
+        <h1>Sonde Nepal FAQ</h1>
+        <div>Radiosonde Tracking System in Nepal</div>
+    </div>
+
+    <!-- GENERAL -->
+    <div class="card">
+        <h2>General Questions</h2>
+
+        <div class="faq-item">
+            <div class="question">What is a radiosonde and how does Sonde Nepal work?</div>
+            <div class="answer">
+                A radiosonde is a small instrument attached to a weather balloon. It measures temperature, humidity, pressure, wind, and GPS location while ascending up to ~30 km.<br><br>
+                We receive signals using SDR, decode them, and display real-time data.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="question">Which radiosonde is used in Nepal?</div>
+            <div class="answer">
+                Commonly iMet-54 or similar models operating in 400–406 MHz.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="question">Where is the station and launch time?</div>
+            <div class="answer">
+                Kirtipur (Tribhuvan University). Usually around 00 UTC daily.
+            </div>
+        </div>
+    </div>
+
+    <!-- HARDWARE -->
+    <div class="card">
+        <h2>Reception & Hardware</h2>
+
+        <div class="faq-item">
+            <div class="question">What antenna should I use?</div>
+            <div class="answer">
+                Quarter-wave (~403 MHz) is enough. Yagi or collinear gives better range.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="question">What SDR is recommended?</div>
+            <div class="answer">
+                RTL-SDR (V3 or better). Add LNA for better results.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="question">How does auto_rx work?</div>
+            <div class="answer">
+                It scans the band, detects signals, locks frequency, and decodes telemetry automatically.
+            </div>
+        </div>
+    </div>
+
+    <!-- TECH -->
+    <div class="card">
+        <h2>Technical</h2>
+
+        <div class="faq-item">
+            <div class="question">What frequencies are used?</div>
+            <div class="answer">
+                400.1 – 406 MHz (varies per launch).
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="question">What data is transmitted?</div>
+            <div class="answer">
+                GPS, altitude, speed, temperature, humidity, diagnostics.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="question">Range?</div>
+            <div class="answer">
+                Up to 300–400 km line-of-sight.
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTRIBUTION -->
+    <div class="card">
+        <h2>Contribution</h2>
+
+        <div class="faq-item">
+            <div class="question">How can I contribute?</div>
+            <div class="answer">
+                Set up a station, contribute code, share data, or help expand coverage.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="question">Can I recover a radiosonde?</div>
+            <div class="answer">
+                Yes. Use last GPS location. Follow safety and legal rules.
+            </div>
+        </div>
+    </div>
+
+    <!-- TROUBLESHOOT -->
+    <div class="card">
+        <h2>Troubleshooting</h2>
+
+        <div class="faq-item">
+            <div class="question">Weak signal?</div>
+            <div class="answer">
+                Improve antenna, use LNA, check frequency and SDR calibration.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="question">Is it legal?</div>
+            <div class="answer">
+                Receiving is generally allowed. Transmitting is regulated.
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<footer>
+    Sonde Nepal © 2026
+</footer>
+
+<script>
+document.querySelectorAll('.question').forEach(q => {
+    q.addEventListener('click', () => {
+        const ans = q.nextElementSibling;
+        ans.style.display = (ans.style.display === 'block') ? 'none' : 'block';
+    });
+});
+</script>
+
+</body>
+</html>

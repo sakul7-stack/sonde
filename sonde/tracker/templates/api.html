@@ -1,0 +1,235 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="{% static 'tracker/ballon.png' %}" type="image/png">
+<title>Sonde API Docs</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #fff;
+    color: #000;
+}
+
+/* NAV */
+#nav {
+    border-bottom: 1px solid #000;
+    padding: 10px 0;
+}
+
+.navbar {
+    max-width: 1000px;
+    margin: auto;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 10px;
+}
+
+.logo {
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.links a {
+    margin-left: 15px;
+    text-decoration: none;
+    color: #000;
+    font-size: 14px;
+}
+
+/* CONTAINER */
+.container {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 10px;
+}
+
+.card {
+    border: 1px solid #000;
+    padding: 20px;
+    margin-bottom: 15px;
+}
+
+h1 { font-size: 22px; }
+h2 { font-size: 16px; margin-top: 20px; }
+
+.badge {
+    border: 1px solid #000;
+    padding: 3px 8px;
+    font-size: 12px;
+    display: inline-block;
+}
+
+/* CODE */
+.code-box {
+    position: relative;
+    margin-top: 10px;
+}
+
+pre {
+    border: 1px solid #000;
+    padding: 12px;
+    overflow-x: auto;
+    background: #fff;
+    font-size: 13px;
+}
+
+.copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    border: 1px solid #000;
+    background: #fff;
+    font-size: 12px;
+    padding: 3px 8px;
+    cursor: pointer;
+}
+
+.copy-btn:hover {
+    background: #000;
+    color: #fff;
+}
+</style>
+</head>
+
+<body>
+
+<div id="nav">
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='/'">
+            Sonde 
+        </div>
+        <div class="links">
+ <a href="/history">History</a>
+            <a href="/api-doc">API</a>
+<a href="/3d">KML</a>            
+<a href="/accounts/dash">Dashboard</a>
+<a href="/burst">Burst</a>
+<a href="/predict">Predict</a>
+            <a href="/report/submit">Report</a>
+            <a href="/faq">About</a>
+            <a href="https://github.com">GitHub</a>
+        </div>
+    </nav>
+</div>
+
+<div class="container">
+
+<!-- HEADER -->
+<div class="card">
+    <h1>Sonde Nepal API Documentation</h1>
+    <span class="badge">Base URL: https://sonde.kushal-kc.com.np</span>
+</div>
+
+<!-- AUTH -->
+<div class="card">
+    <h2>Authentication</h2>
+    <p>Send API key in headers:</p>
+
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>X-API-KEY: YOUR_API_KEY</pre>
+    </div>
+</div>
+
+<!-- 1 -->
+<div class="card">
+    <h2>1. Get Sonde List by Date</h2>
+    <p><b>GET</b> /data/sondes_by_date/?date=YYYY-MM-DD</p>
+
+    <h3>curl</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>curl.exe "https://sonde.kushal-kc.com.np/data/sondes_by_date/?date=2026-05-04" -H "X-API-KEY: YOUR_KEY"</pre>
+    </div>
+
+    <h3>Python</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>
+import requests
+
+url = "https://sonde.kushal-kc.com.np/data/sondes_by_date/"
+headers = {"X-API-KEY": "YOUR_KEY"}
+params = {"date": "2026-05-04"}
+
+r = requests.get(url, headers=headers, params=params)
+print(r.json())
+        </pre>
+    </div>
+</div>
+
+<!-- 2 -->
+<div class="card">
+    <h2>2. Get Sonde Telemetry</h2>
+    <p><b>GET</b> /data/sonde_data/?sonde_id=ID</p>
+
+    <h3>curl</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>curl.exe "https://sonde.kushal-kc.com.np/data/sonde_data/?sonde_id=IMET5-55095407" -H "X-API-KEY: YOUR_KEY"</pre>
+    </div>
+
+    <h3>Python</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>
+import requests
+
+url = "https://sonde.kushal-kc.com.np/data/sonde_data/"
+headers = {"X-API-KEY": "YOUR_KEY"}
+params = {"sonde_id": "IMET5-55095407"}
+
+r = requests.get(url, headers=headers, params=params)
+print(r.json())
+        </pre>
+    </div>
+</div>
+
+<!-- 3 -->
+<div class="card">
+    <h2>3. Download KML Path</h2>
+    <p><b>GET</b> /data/sonde_KML/?sonde_id=ID</p>
+
+    <h3>curl (download file)</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>curl.exe "https://sonde.kushal-kc.com.np/data/sonde_KML/?sonde_id=IMET5-55095407" -H "X-API-KEY: YOUR_KEY" -o sonde.kml</pre>
+    </div>
+
+    <h3>Python (download file)</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>
+import requests
+
+url = "https://sonde.kushal-kc.com.np/data/sonde_KML/"
+headers = {"X-API-KEY": "YOUR_KEY"}
+params = {"sonde_id": "IMET5-55095407"}
+
+r = requests.get(url, headers=headers, params=params)
+
+with open("sonde.kml", "wb") as f:
+    f.write(r.content)
+        </pre>
+    </div>
+</div>
+
+</div>
+
+<script>
+function copyCode(btn) {
+    const text = btn.nextElementSibling.innerText;
+    navigator.clipboard.writeText(text);
+
+    btn.innerText = "Copied!";
+    setTimeout(() => btn.innerText = "Copy", 1200);
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,746 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="/static/tracker/ballon.png" type="image/png">
+<link rel="manifest" href="{% static 'tracker/manifest.json' %}">
+<meta name="theme-color" content="#000000">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>Sonde</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+}
+
+#container {
+    display: flex;
+    height: calc(100vh - 45px);
+}
+
+#nav {
+    border-bottom: 1px solid #000;
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: #fff;
+    color: #000;
+}
+
+.logo {
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    color: #000;
+    cursor: pointer;
+}
+
+.links {
+    display: flex;
+    gap: 18px;
+}
+
+.links a {
+    color: #000;
+    text-decoration: none;
+    font-size: 14px;
+    padding: 4px 6px;
+}
+
+.links a:hover {
+    text-decoration: underline;
+}
+
+.logo {
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.links {
+    display: flex;
+    gap: 18px;
+}
+
+
+
+#table {
+    width: 23%;
+    overflow-y: auto;
+    border-right: 1px solid #ccc;
+    padding: 6px;
+    background: #f8f8f8;
+}
+
+/* MAP */
+#map {
+    width: 77%;
+    overflow: hidden;
+}
+
+/* GROUP TABLES */
+.group {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+    background: white;
+}
+
+.group th, .group td {
+    border: 1px solid #ccc;
+    padding: 6px;
+    font-size: 12px;
+    text-align: center;
+}
+
+.group th {
+    background: #f0f0f0;
+}
+
+#kmlbutton {
+    display: block;
+    background: #3f3e3e;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    cursor: pointer;
+}
+#skewtbutton {
+    background: #3f3e3e;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    cursor: pointer;
+}
+
+
+
+#hodobutton {
+    background: #3f3e3e;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    #container {
+        flex-direction: column;
+        height: auto;
+        overflow-y: auto;
+    }
+
+    #map {
+        width: 100%;
+        height: 50vh;
+        order: 1;
+    }
+
+    #table {
+        width: 100%;
+        height: auto;
+        overflow-y: visible;
+        order: 2;
+        border-right: none;
+        border-top: 1px solid #ccc;
+    }
+}
+</style>
+</head>
+
+<body>
+    <div id="nav">
+    <nav class="navbar">
+        <div class="logo" onclick="window.location.href='/'">
+            Sonde
+        </div>
+
+        <div class="links">
+           <a href="/history">History</a>
+            <a href="/api-doc">API</a>
+            <a href="/3d">KML</a>
+            <a href="/accounts/dash">Dashboard</a>
+            <a href="/burst">Burst</a>
+            <a href="/predict">Predict</a>
+            <a href="/report/submit">Report</a>
+            <a href="/faq">About</a>
+            <a href="https://github.com">GitHub</a>
+        </div>
+    </nav>
+    </div>
+
+<div id="container">
+
+
+    <div id="table">
+
+        <table class="group">
+            <tr>
+                <th>Sonde ID</th>
+                <th>Type</th>
+                <th>Subtype</th>
+            </tr>
+            <tr>
+                <td id="g1_id"></td>
+                <td id="g1_type"></td>
+                <td id="g1_subtype"></td>
+            </tr>
+        </table>
+
+        <table class="group">
+            <tr>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th>Altitude</th>
+            </tr>
+            <tr>
+                <td id="g2_lat"></td>
+                <td id="g2_lon"></td>
+                <td id="g2_alt"></td>
+            </tr>
+        </table>
+
+        <table class="group">
+            <tr>
+                <th>Time</th>
+            </tr>
+            <tr>
+                <td id="g3_time"></td>
+            </tr>
+        </table>
+
+        <table class="group">
+            <tr>
+                <th>Horizontal Vel</th>
+                <th>Vertical Vel</th>
+                <th>Heading</th>
+            </tr>
+            <tr>
+                <td id="g4_h"></td>
+                <td id="g4_v"></td>
+                <td id="g4_head"></td>
+            </tr>
+        </table>
+
+        <table class="group">
+            <tr>
+                <th>Temp</th>
+                <th>Humidity</th>
+                <th>Pressure</th>
+            </tr>
+            <tr>
+                <td id="g5_temp"></td>
+                <td id="g5_hum"></td>
+                <td id="g5_pres"></td>
+            </tr>
+        </table>
+
+        <table class="group">
+            <tr>
+                <th>Battery</th>
+                <th>Freq</th>
+                <th>SNR</th>
+            </tr>
+            <tr>
+                <td id="g6_bat"></td>
+                <td id="g6_freq"></td>
+                <td id="g6_snr"></td>
+            </tr>
+        </table>
+
+        <canvas id="tempChart"></canvas>
+        <canvas id="humChart"></canvas>
+        <canvas id="altChart"></canvas>
+        <canvas id="snrChart"></canvas>
+
+        <div style="display:flex; gap:6px; justify-content:center; margin:10px 6px;">
+            <button onclick="downloadKML()" id="kmlbutton">Download KML</button>
+            <button onclick="skewTplot()" id="skewtbutton">Skew-T</button>
+            <button onclick="hodographPlot()" id="hodobutton">Hodograph</button>
+        </div>
+
+        <div id="skewtDiv" style="display:none; padding:6px;">
+            <img id="skewtImg" style="width:100%;">
+        </div>
+          
+       <div id="hodoDiv" style="display:none; padding:6px;">
+    <img id="hodoImg" style="width:100%;">
+</div>
+
+
+    </div>
+
+    <div id="map"></div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+let map = L.map('map').setView([27.682, 85.2881], 13);
+
+let baseMaps = {
+    "Satellite": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' }),
+    "Topo": L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '© OpenTopoMap' }),
+    "Dark": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CartoDB' }),
+    "Light": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© CartoDB' }),
+    "Esri Topo": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' }),
+    "Esri Street": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' }),
+};
+
+baseMaps["Satellite"].addTo(map); // THEN add to map
+
+L.control.layers(baseMaps, null, { position: 'bottomright' }).addTo(map);
+
+let legend = L.control({ position: 'topright' });
+
+legend.onAdd = function () {
+    let div = L.DomUtil.create('div');
+    div.style.cssText = `
+        padding: 8px 12px;
+       
+        font-size: 13px;
+        line-height: 24px;
+        margin-bottom: 30px;
+    `;
+    div.innerHTML = `
+    <div><span style="display:inline-block;width:30px;height:3px;background:red;vertical-align:middle;margin-right:6px;"></span><span style="color:white;">Actual</span></div>
+    <div><span style="display:inline-block;width:30px;height:3px;background:blue;vertical-align:middle;margin-right:6px;"></span><span style="color:white;">Predicted</span></div>
+`;
+    return div;
+};
+
+legend.addTo(map);
+
+let infoBox = L.control({ position: 'bottomleft' });
+
+infoBox.onAdd = function () {
+    let div = L.DomUtil.create('div');
+    div.style.cssText = `
+        font-size: 12px;
+        line-height: 20px;
+        color: white;
+        padding: 6px 10px;
+    `;
+    div.id = 'infoBox';
+    return div;
+};
+
+infoBox.addTo(map);
+
+
+let balloonIcon = L.icon({
+    iconUrl: "{% static 'tracker/ballon.png' %}",
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+});
+
+let pballoonIcon = L.icon({
+    iconUrl: "{% static 'tracker/pballon.png' %}",
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+});
+
+let ascentIcon = L.icon({
+    iconUrl: "{% static 'tracker/blast.png' %}",
+    iconSize: [30, 30],
+    iconAnchor: [10, 10],
+});
+
+let stationIcon = L.icon({
+    iconUrl: "{% static 'tracker/station.png' %}",
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+});
+
+station = L.marker([27.682, 85.2881], { icon: stationIcon }).addTo(map)
+station.bindPopup(`
+    <b>Upper Air Radiosonde Station</b><br>
+`, {
+    closeButton: false,
+    offset: [0, -20]
+});
+
+
+let marker = null;
+let pathData = [];
+let polyline = L.polyline([], { color: 'red' }).addTo(map)
+let pred_polyline = L.polyline([], { color: 'blue' }).addTo(map)
+let predictionLoaded = false
+
+const tempCtx = document.getElementById('tempChart').getContext('2d');
+const humCtx = document.getElementById('humChart').getContext('2d');
+const altCtx = document.getElementById('altChart').getContext('2d');
+const snrCtx = document.getElementById('snrChart').getContext('2d');
+
+
+let tempChart = new Chart(tempCtx, {
+    type: 'line',
+    data: { labels: [], datasets: [{
+        label: 'Temperature (°C)',
+        data: [],
+        borderColor: 'blue',
+        borderWidth: 1,
+        pointRadius: 0,
+        tension: 0.2
+    }]},
+    options: { responsive: true, animation: false }
+});
+
+let humChart = new Chart(humCtx, {
+    type: 'line',
+    data: { labels: [], datasets: [{
+        label: 'Humidity (%)',
+        data: [],
+        borderColor: 'red',
+        borderWidth: 1,
+        pointRadius: 0,
+        tension: 0.2
+    }]},
+    options: { responsive: true, animation: false }
+});
+
+let altChart = new Chart(altCtx, {
+    type: 'line',
+    data: { labels: [], datasets: [{
+        label: 'Altitude (m)',
+        data: [],
+        borderColor: 'green',
+        borderWidth: 1,
+        pointRadius: 0,
+        tension: 0.2
+    }]},
+    options: { responsive: true, animation: false }
+});
+
+let snrChart = new Chart(snrCtx, {
+    type: 'line',
+    data: { labels: [], datasets: [{
+        label: 'Signal to Noise Ratio (Db)',
+        data: [],
+        borderColor: 'black',
+        borderWidth: 1,
+        pointRadius: 0,
+        tension: 0.2
+    }]},
+    options: { responsive: true, animation: false }
+});
+
+
+
+/* FETCH */
+async function fetch_Sondes() {
+    let res = await fetch('https://sonde.kushal-kc.com.np/api/sondes/');
+    return await res.json();
+}
+
+/* UPDATE */
+async function updatePath() {
+    let sondes = await fetch_Sondes();
+
+    if (!sondes.data.length) return;
+
+    let s = sondes.data[0];
+
+    let coords = sondes.data.map(p => [p.lat, p.lon]);
+    polyline.setLatLngs(coords);
+
+    let latest = coords[0];
+    pathData = sondes.data;
+
+    if (!predictionLoaded) {
+        predictionLoaded = true;
+        await predicted_path(sondes.sonde_id);
+    }
+
+    /* MARKER */
+    if (!marker) {
+        marker = L.marker(latest, { icon: balloonIcon }).addTo(map);
+    } else {
+        marker.setLatLng(latest);
+    }
+
+    /* TIME */
+    let d = new Date(s.datetime);
+    let time = d.toLocaleString('en-GB', { hour12: false });
+
+    /* GROUP 1 */
+    document.getElementById("g1_id").innerText = sondes.sonde_id;
+    document.getElementById("g1_type").innerText = sondes.type;
+    document.getElementById("g1_subtype").innerText = sondes.subtype;
+
+    /* GROUP 2 */
+    document.getElementById("g2_lat").innerText = s.lat;
+    document.getElementById("g2_lon").innerText = s.lon;
+    document.getElementById("g2_alt").innerText = s.alt + " m";
+
+    /* GROUP 3 */
+    document.getElementById("g3_time").innerText = time + ' NPT';
+
+    /* GROUP 4 */
+    document.getElementById("g4_h").innerText = s.vel_h.toFixed(2) + " m/s";
+    document.getElementById("g4_v").innerText = s.vel_v.toFixed(2) + " m/s";
+    document.getElementById("g4_head").innerText = s.heading.toFixed(2) + "°";
+
+    /* GROUP 5 */
+    document.getElementById("g5_temp").innerText = s.temp + " °C";
+    document.getElementById("g5_hum").innerText = s.humidity + " %";
+    document.getElementById("g5_pres").innerText = s.pressure + " hPa";
+
+    /* GROUP 6 */
+    document.getElementById("g6_bat").innerText = s.battery + " V";
+    document.getElementById("g6_freq").innerText = s.f_centre + " Hz";
+    document.getElementById("g6_snr").innerText = s.snr + " dB";
+    
+    let data = sondes.data.slice().reverse();
+
+    let temps = data.map(t => t.temp);
+    let hums = data.map(t => t.humidity);
+    let alts = data.map(t => t.alt);
+    let snrs = data.map(t => t.snr);
+    let labels = data.map(t => new Date(t.datetime).toLocaleTimeString());
+
+    tempChart.data.labels = labels;
+    tempChart.data.datasets[0].data = temps;
+    tempChart.update();
+
+    humChart.data.labels = labels;
+    humChart.data.datasets[0].data = hums;
+    humChart.update();
+
+    altChart.data.labels = labels;
+    altChart.data.datasets[0].data = alts;
+    altChart.update();
+
+    snrChart.data.labels = labels;
+    snrChart.data.datasets[0].data = snrs;
+    snrChart.update();
+
+    
+
+    /* POPUP */
+    marker.bindPopup(`
+        <b>${sondes.sonde_id}</b><br>
+        Lat: ${s.lat}, Lon: ${s.lon} <br>
+        Alt: ${s.alt} m
+    `, {
+    closeButton: false,
+    offset: [0, -20]
+});
+marker.on('mouseover', function () {
+    this.openPopup();
+});
+
+
+marker.on('mouseout', function () {
+    this.closePopup();
+});
+}
+
+
+async function skewTplot() {
+    const res = await fetch_Sondes();
+    const sonde_id = res.sonde_id;
+    
+    const div = document.getElementById('skewtDiv');
+    const img = document.getElementById('skewtImg');
+    
+    img.src = `https://sonde.kushal-kc.com.np/data/skewt/?sonde_id=${sonde_id}`;
+ 
+    div.style.display = div.style.display === 'none' ? 'block' : 'none';
+}
+
+
+
+
+async function hodographPlot() {
+    const res = await fetch_Sondes();
+    const sonde_id = res.sonde_id;
+
+    const div = document.getElementById('hodoDiv');
+    const img = document.getElementById('hodoImg');
+
+    img.src = `https://sonde.kushal-kc.com.np/data/hodograph/?sonde_id=${sonde_id}`;
+
+    div.style.display = div.style.display === 'none' ? 'block' : 'none';
+}
+
+
+
+
+
+async function downloadKML(){
+    const res= await fetch_Sondes()
+
+    let coords=''
+    res.data.forEach(p => {
+        coords+=`${p.lon},${p.lat},${p.alt}\n`
+    })
+    const kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+
+<name>Sonde Path</name>
+
+<Placemark>
+  <name>Flight Path</name>
+
+  <Style>
+    <LineStyle>
+      <color>ff0000ff</color>  <!-- red line -->
+      <width>2</width>
+    </LineStyle>
+    <PolyStyle>
+      <color>4d0000ff</color>  <!-- transparent fill -->
+    </PolyStyle>
+  </Style>
+
+  <LineString>
+    <extrude>1</extrude>  
+    <altitudeMode>absolute</altitudeMode>
+    <coordinates>
+${coords}
+    </coordinates>
+  </LineString>
+
+</Placemark>
+
+</Document>
+</kml>`;
+
+    const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "sonde_path.kml";
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+
+station.on('mouseover', function () {
+    this.openPopup();
+});
+
+// Hide when mouse leaves
+station.on('mouseout', function () {
+    this.closePopup();
+});
+
+let popup = L.popup({
+    closeButton: false,
+    offset: [0, -10]
+});
+
+let lastMove = 0;
+
+polyline.on('mousemove', function (e) {
+    let now = Date.now();
+    if (now - lastMove < 50) return; // throttle
+    lastMove = now;
+
+    if (!pathData.length) return;
+
+    let minDist = Infinity;
+    let closest = null;
+
+    for (let i = 0; i < pathData.length; i++) {
+        let d = map.distance(e.latlng, [pathData[i].lat, pathData[i].lon]);
+        if (d < minDist) {
+            minDist = d;
+            closest = pathData[i];
+        }
+    }
+
+    if (!closest) return;
+
+    popup
+        .setLatLng(e.latlng)
+        .setContent(`
+            <b>Telemetry</b><br>
+            Alt: ${closest.alt} m<br>
+            Temp: ${closest.temp} °C<br>
+            Hum: ${closest.humidity} %
+        `)
+        .openOn(map);
+});
+
+polyline.on('mouseout', function () {
+    map.closePopup();
+});
+
+
+
+async function predicted_path(sonde_id) {
+    const res = await fetch(`https://sonde.kushal-kc.com.np/api/pred/?sonde_id=${sonde_id}`)
+    const raw = await res.json()
+
+    if (!raw.data || !raw.data.prediction) {
+        predictionLoaded = false;
+        return;
+    }
+
+    const prediction = raw.data.prediction;
+
+    const ascent = prediction[0].trajectory.map(p => [p.latitude, p.longitude]);
+    const descent = prediction[1].trajectory.map(p => [p.latitude, p.longitude]);
+
+    pred_polyline.setLatLngs([...ascent, ...descent]);
+
+    // landing marker
+    const lastPoint = prediction[1].trajectory.at(-1);
+        const landingMarker = L.marker([lastPoint.latitude, lastPoint.longitude], { icon: pballoonIcon }).addTo(map);
+    landingMarker.bindPopup(`
+        <b>Predicted Landing</b><br>
+        Lat: ${lastPoint.latitude.toFixed(4)}, Lon: ${lastPoint.longitude.toFixed(4)}<br>
+        Alt: ${lastPoint.altitude.toFixed(0)} m
+    `, { closeButton: false, offset: [0, -20] });
+    landingMarker.on('mouseover', function () { this.openPopup(); });
+    landingMarker.on('mouseout', function () { this.closePopup(); });
+
+    // burst marker
+    const burstPoint = prediction[0].trajectory.at(-1);
+    const burstMarker = L.marker([burstPoint.latitude, burstPoint.longitude], { icon: ascentIcon }).addTo(map);
+    burstMarker.bindPopup(`
+        <b>Predicted Burst</b><br>
+        Lat: ${burstPoint.latitude.toFixed(4)}, Lon: ${burstPoint.longitude.toFixed(4)}<br>
+        Alt: ${burstPoint.altitude.toFixed(0)} m
+    `, { closeButton: false, offset: [0, -20] });
+    burstMarker.on('mouseover', function () { this.openPopup(); });
+    burstMarker.on('mouseout', function () { this.closePopup(); });
+}
+
+setInterval(() => {
+    const el = document.getElementById('infoBox');
+    if (el) {
+        let utc = new Date().toISOString().replace('T', ' ').slice(0, 19);
+        el.innerHTML = `<div>UTC: ${utc}</div>`;
+    }
+}, 1000);
+
+updatePath();
+setInterval(updatePath, 3500);
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/tracker/sw.js')
+    .then(() => console.log("SW registered"));
+}
+
+</script>
+
+</body>
+</html>
