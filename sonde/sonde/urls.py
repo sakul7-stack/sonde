@@ -8,7 +8,7 @@ from tracker import views
 
 
 urlpatterns = [
-    path('portal-7721/', admin.site.urls),
+    path('admin/', admin.site.urls),
     path('api/ingest/', views.ingest),
     path('api/sondes/',views.sondes),
     path('api/pred/',views.predict_path),
