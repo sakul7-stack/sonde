@@ -65,7 +65,7 @@ def ingest(request):
     try:
         data = json.loads(request.body)
 
-        # SONDE 
+        # ---- SONDE ----
         sonde,_ = Sonde.objects.get_or_create(
             sonde_id=data["id"],
             defaults={
@@ -75,7 +75,7 @@ def ingest(request):
             }
         )
 
-        # TELEMETRY 
+        # ---- TELEMETRY ----
         telemetry = Telemetry.objects.create(
             sonde=sonde,
             frame=data.get("frame"),
@@ -111,6 +111,7 @@ def ingest(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
     
+from django.http import JsonResponse
 
 def sondes(request):
     if request.method != 'GET':
@@ -195,7 +196,7 @@ def predict(request):
 def predict_prox(request):
     base_url = "https://api.v2.sondehub.org/tawhiri"
 
-    # forward query parameters
+    # forward query parameters from frontend
     params = request.GET.dict()
 
     try:
@@ -215,5 +216,14 @@ def burst(request):
     return render(request,'burst.html')
 
 
+
+def skewt_page(request):
+    return render(request, 'skewt.html')
+
+ASCENT_RATE = 5.0      # m/s
+DESCENT_RATE = -5.0    # m/s
+BURST_ALT = 30000      # meters
+DT = 60                # seconds per step
+STEPS = 60             # prediction length
 
 

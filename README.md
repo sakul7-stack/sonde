@@ -10,7 +10,7 @@ A web-based radiosonde tracking platform.
 
 ## About
 
-This project provides real-time and historical tracking of **radiosondes** — battery-powered telemetry instruments carried into the atmosphere by weather balloons. Radiosondes measure and transmit key atmospheric parameters including:
+This project provides real-time and historical tracking of **radiosondes** which are battery-powered telemetry instruments carried into the atmosphere by weather balloons. Radiosondes measure and transmit key atmospheric parameters including:
 
 - Temperature
 - Relative Humidity
@@ -18,6 +18,7 @@ This project provides real-time and historical tracking of **radiosondes** — b
 - Wind Speed & Direction
 - GPS Position (Latitude / Longitude)
 
+The tracker aggregates radiosonde data useful for meteorology enthusiasts, atmospheric researchers, and amateur radio operators.
 
 Radiosonde detection and decoding is powered by [**radiosonde_auto_rx**](https://github.com/projecthorus/radiosonde_auto_rx) — an open-source decoder that automatically detects and decodes radiosonde signals using RTL-SDR or AirSpy receivers.
 
@@ -45,6 +46,7 @@ Radiosonde detection and decoding is powered by [**radiosonde_auto_rx**](https:/
 | `/3d/` | 3D flight path viewer — upload a KML file, rendered with Cesium |
 | `/history/` | Historical flight data browser |
 | `/report/submit/` | Report a found/recovered radiosonde |
+| `/chase/` | Chase — cahse adn chase user positions |
 | `/accounts/dash/` | User dashboard — register or sign in with Google to get your API key |
 
 ---
@@ -269,12 +271,7 @@ https://sonde.kushal-kc.com.np/data/hodograph/?sonde_id=IMET5-55093438
 - [TAWHIRI](https://github.com/cuspaceflight/tawhiri) — flight prediction engine used for trajectory forecasting
 - [CesiumJS](https://cesium.com/) — 3D globe rendering for flight path visualization
 
----
 
-## Author
-
-**Kushal KC**
-- [kushal-kc.com.np](https://www.kushal-kc.com.np/)
 
 ---
 

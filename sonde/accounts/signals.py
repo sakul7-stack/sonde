@@ -11,7 +11,7 @@ def create_user_data(sender, instance, created, **kwargs):
         api, _ = APIKey.objects.get_or_create(user=instance)
 
         send_mail(
-            subject="Your API Key",
+            subject="API Key",
             message=f"API Key: {api.key}",
             from_email="",
             recipient_list=[instance.email or ""],

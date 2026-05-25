@@ -55,7 +55,6 @@ body {
 }
 .links a:hover { text-decoration: underline; }
 .links a.active { font-weight: bold; border-bottom: 2px solid #000; }
-
 #container {
     display: flex;
     height: calc(100vh - 45px);
@@ -74,6 +73,8 @@ body {
     width: 77%;
     overflow: hidden;
 }
+
+/* ── CONTROL BAR ─────────────────────────────────────── */
 #controls {
     padding: 7px 8px 6px;
     border-bottom: 1px solid #ccc;
@@ -184,6 +185,7 @@ body {
     font-size: 10px;
     font-weight: bold;
 }
+
 .chart-wrap {
     background: white;
     border: 1px solid #ddd;
@@ -191,7 +193,6 @@ body {
     margin-bottom: 6px;
 }
 .chart-wrap canvas { max-height: 100px; }
-
 
 .section-label {
     font-size: 10px;
@@ -241,15 +242,17 @@ body {
     <nav class="navbar">
         <div class="logo" onclick="window.location.href='/'">Sonde</div>
         <div class="links">
-            <a href="/history" class="active">History</a>
-            <a href="/api-doc">API</a>
-            <a href="/3d">KML</a>
-            <a href="/accounts/dash">Dashboard</a>
-            <a href="/burst">Burst</a>
-            <a href="/predict">Predict</a>            
-            <a href="/report/submit">Report</a>
-            <a href="/faq">About</a>
-            <a href="https://github.com">GitHub</a>
+                  <a href="/history" class="active">Historical</a>
+      <a href="/3d">KML</a>
+      <a href="/skewt">Skew-T</a>
+      <a href="/burst">Burst</a>
+      <a href="/predict">Predict</a>
+      <a href="/chase">Chase</a>
+      <a href="/report/submit">Report</a>
+      <a href="/accounts/dash">Dashboard</a>
+      <a href="/api-doc">API</a>
+      <a href="/faq">About</a>
+       <a href="https://github.com/sakul7-stack/sonde">GitHub</a>
         </div>
     </nav>
 </div>
@@ -285,6 +288,7 @@ body {
             </table>
         </div>
 
+        <!-- DETAIL — shown after clicking a row -->
         <div id="detail-section">
 
             <div class="section-label">Selected Flight</div>
@@ -350,6 +354,7 @@ body {
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
 
+/* ── COLORS ──────────────────────────────────────────── */
 const COLORS = [
   '#2563eb', 
   '#dc2626', 
@@ -446,6 +451,7 @@ async function fetchHistory() {
     return await res.json();
 }
 
+/* ── BUILD TABLE ─────────────────────────────────────── */
 function buildTable() {
     const tbody = document.getElementById('sonde-tbody');
     tbody.innerHTML = '';
@@ -483,6 +489,7 @@ function buildTable() {
     });
 }
 
+/* ── HELPERS ─────────────────────────────────────────── */
 function getChecked() {
     return Object.keys(allSondes).filter(sid => {
         const chk = document.getElementById('chk-' + sid);
@@ -501,7 +508,7 @@ function clearLandingMarkers() {
     landingMarkers = [];
 }
 
-
+/* ── CONTROL ACTIONS ─────────────────────────────────── */
 function plotSelected() {
     clearAllLayers();
     clearLandingMarkers();
@@ -743,7 +750,6 @@ async function init() {
         const n = sondeList.length;
         document.getElementById('status-bar').textContent =
             n + ' flight' + (n !== 1 ? 's' : '') + ' loaded. Check boxes then click \u201cPlot Paths\u201d.';
-
         if (sondeList.length) selectSonde(sondeList[0].sonde_id);
         plotSelected()
 

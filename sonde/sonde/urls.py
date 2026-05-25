@@ -8,7 +8,7 @@ from tracker import views
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('portal-7721/', admin.site.urls),
     path('api/ingest/', views.ingest),
     path('api/sondes/',views.sondes),
     path('api/pred/',views.predict_path),
@@ -18,11 +18,14 @@ urlpatterns = [
     path('api-doc/',views.api_doc),
     path('predict/',views.predict),
     path('predict_prox/',views.predict_prox),
-    path('burst/',views.burst),    
+    path('burst/',views.burst),
+    path('skewt/', views.skewt_page),    
 
     path('report/', include('reportsonde.urls')), 
     path('accounts/', include('accounts.urls')),
     path('accounts/', include('allauth.urls')),
     path('data/', include('data.urls')),
     path('history/',include('history.urls')),
+ 
+     path('chase/', include('chase.urls')),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

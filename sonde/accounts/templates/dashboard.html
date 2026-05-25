@@ -14,7 +14,6 @@ body {
     color: #000;
 }
 
-/* NAVBAR */
 #nav {
     border-bottom: 1px solid #000;
     padding: 10px 0;
@@ -46,7 +45,6 @@ body {
     text-decoration: underline;
 }
 
-/* CONTAINER */
 .container {
     max-width: 800px;
     margin: 40px auto;
@@ -117,7 +115,6 @@ input[type="number"] {
 
 <body>
 
-<!-- NAVBAR -->
 <div id="nav">
     <nav class="navbar">
         <div class="logo" onclick="window.location.href='/'">
@@ -125,22 +122,23 @@ input[type="number"] {
         </div>
 
         <div class="links">
- <a href="/history">History</a>
-           <a href="/api-doc">API</a>
-<a href="/3d">KML</a>
-            <a href="/accounts/logout/">Logout</a>
-<a href="/burst">Burst</a>
-<a href="/predict">Predict</a>
-            <a href="/report/submit">Report</a>
-            <a href="/faq">About</a>
-            <a href="https://github.com">GitHub</a>
+      
+      <a href="/history">Historical</a>
+      <a href="/3d">KML</a>
+      <a href="/skewt">Skew-T</a>
+      <a href="/burst">Burst</a>
+      <a href="/predict">Predict</a>
+      <a href="/chase">Chase</a>
+      <a href="/report/submit">Report</a>
+      <a href="/accounts/logout">Logout</a>
+      <a href="/api-doc">API</a>
+      <a href="/faq">About</a>
+       <a href="https://github.com/sakul7-stack/sonde">GitHub</a>
         </div>
     </nav>
 </div>
 
 <div class="container">
-
-    <!-- USER INFO -->
     <div class="card">
         <div class="title">User Info</div>
 
@@ -150,16 +148,12 @@ input[type="number"] {
         <div class="label">Email</div>
         <div class="value">{{ user.email }}</div>
     </div>
-
-    <!-- PROFILE -->
     <div class="card">
         <div class="title">Profile</div>
 
         <span class="badge">API User: {{ profile.is_api_user }}</span>
         <span class="badge">Contributor: {{ profile.is_contributor }}</span>
     </div>
-
-    <!-- API KEY -->
     <div class="card">
         <div class="title">API Key</div>
 
@@ -174,7 +168,6 @@ input[type="number"] {
         {% endif %}
     </div>
 
-    <!-- ROLES -->
     <div class="card">
         <div class="title">⚙️ Roles</div>
 
@@ -195,8 +188,6 @@ input[type="number"] {
                     onchange="toggleContributor()">
                 Contributor
             </label>
-
-            <!-- CONTRIBUTOR FIELDS -->
             <div id="contributorFields"
                  style="margin-top:10px;"
                  {% if not profile.is_contributor %}hidden{% endif %}>

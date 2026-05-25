@@ -1,0 +1,973 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sonde — Chase Mode</title>
+<link rel="icon" href="/static/tracker/ballon.png" type="image/png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Courier New',Courier,monospace;
+  background:#fff;color:#000;
+  display:flex;flex-direction:column;
+  height:100vh;overflow:hidden;
+}
+#nav{border-bottom:2px solid #000;flex-shrink:0;background:#fff;z-index:1000}
+.navbar{display:flex;justify-content:space-between;align-items:center;padding:9px 16px}
+.logo{font-weight:bold;font-size:16px;color:#000;text-decoration:none;
+      letter-spacing:.06em;text-transform:uppercase}
+.nav-links a{text-decoration:none;color:#000;margin-left:14px;font-size:12px;
+             text-transform:uppercase;letter-spacing:.06em}
+.nav-links a:hover{text-decoration:underline}
+.nav-links a.active{border-bottom:2px solid #000;padding-bottom:1px}
+.hamburger{display:none;font-size:22px;cursor:pointer;user-select:none}
+@media(max-width:900px){
+  .hamburger{display:block}
+  .nav-links{position:absolute;top:48px;right:0;background:#fff;border:1px solid #000;
+             display:none;flex-direction:column;width:200px;z-index:999}
+  .nav-links.open{display:flex}
+  .nav-links a{margin:0;padding:10px 16px;border-bottom:1px solid #eee}
+}
+
+#page-body{flex:1;min-height:0;display:flex;overflow:hidden}
+#sidebar{
+  width:268px;flex-shrink:0;border-right:2px solid #000;
+  display:flex;flex-direction:column;overflow-y:auto;background:#fff;
+}
+#sidebar::-webkit-scrollbar{width:4px}
+#sidebar::-webkit-scrollbar-thumb{background:#000}
+
+.sb-header{
+  border-bottom:1px solid #000;padding:8px 12px;
+  font-size:10px;font-weight:bold;text-transform:uppercase;
+  letter-spacing:.1em;background:#000;color:#fff;flex-shrink:0;
+}
+
+.section{border-bottom:1px solid #000;padding:10px 12px}
+.section-title{
+  font-size:9px;font-weight:bold;text-transform:uppercase;
+  letter-spacing:.1em;color:#888;margin-bottom:8px;
+}
+
+label{
+  display:block;font-size:11px;color:#555;margin-bottom:2px;margin-top:7px;
+  text-transform:uppercase;letter-spacing:.04em;
+}
+label:first-of-type{margin-top:0}
+
+input[type=text],input[type=number],select{
+  width:100%;border:1px solid #000;padding:5px 8px;
+  font-size:12px;font-family:'Courier New',monospace;
+  background:#fff;color:#000;outline:none;border-radius:0;-webkit-appearance:none;
+}
+input[type=text]:focus,input[type=number]:focus,select:focus{background:#000;color:#fff}
+select option{background:#fff;color:#000}
+
+.btn{
+  border:1px solid #000;background:#fff;color:#000;
+  padding:6px 10px;font-size:11px;cursor:pointer;
+  font-family:'Courier New',monospace;width:100%;margin-top:6px;
+  text-align:center;text-transform:uppercase;letter-spacing:.06em;border-radius:0;
+}
+.btn:hover{background:#000;color:#fff}
+.btn.primary{background:#000;color:#fff}
+.btn.primary:hover{background:#333}
+.btn.danger{background:#fff;color:#000;border:1px solid #000}
+.btn.danger:hover{background:#000;color:#fff}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+
+.btn-row{display:flex;gap:6px;margin-top:6px}
+.btn-row .btn{margin-top:0;flex:1}
+.toggle-wrap{padding:10px 12px;border-bottom:1px solid #000}
+.toggle-label{
+  font-size:9px;font-weight:bold;text-transform:uppercase;
+  letter-spacing:.1em;color:#888;margin-bottom:8px;display:block;
+}
+.toggle-row{display:flex;align-items:center;gap:10px}
+.switch{position:relative;width:52px;height:26px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.switch .knob{
+  position:absolute;inset:0;background:#ddd;border:1px solid #aaa;cursor:pointer;
+  transition:background .2s;
+}
+.switch .knob:before{
+  content:'';position:absolute;width:18px;height:18px;
+  background:#000;top:3px;left:3px;transition:transform .2s;
+}
+.switch input:checked+.knob{background:#000;border-color:#000}
+.switch input:checked+.knob:before{background:#fff;transform:translateX(26px)}
+.toggle-desc{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.04em;line-height:1.4}
+.chk-row{display:flex;align-items:center;gap:7px;margin-top:5px;cursor:pointer}
+.chk-row input[type=checkbox]{width:13px;height:13px;accent-color:#000;cursor:pointer;flex-shrink:0}
+.chk-row label{margin:0;color:#000;font-size:11px;cursor:pointer;text-transform:none;letter-spacing:0}
+.stat-row{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:11px;padding:3px 0;border-bottom:1px solid #eee;
+}
+.stat-row:last-child{border-bottom:none}
+.stat-lbl{color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.stat-val{font-weight:bold;font-variant-numeric:tabular-nums}
+.stat-val.live{color:#000}
+.stat-val.off{color:#bbb}
+.chaser-item{
+  padding:6px 0;border-bottom:1px solid #eee;
+  font-size:11px;display:flex;justify-content:space-between;align-items:flex-start;
+}
+.chaser-item:last-child{border-bottom:none}
+.chaser-name{font-weight:bold;letter-spacing:.04em}
+.chaser-meta{color:#888;font-size:10px;margin-top:1px}
+.chaser-badge{
+  font-size:9px;padding:1px 5px;border:1px solid #000;
+  text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;
+}
+.chaser-badge.you{background:#000;color:#fff}
+.chaser-badge.live{background:#fff;color:#000}
+.sonde-item{
+  padding:5px 0;border-bottom:1px solid #eee;font-size:11px;cursor:pointer;
+}
+.sonde-item:hover{background:#f8f8f8}
+.sonde-item:last-child{border-bottom:none}
+.sonde-id{font-weight:bold;letter-spacing:.04em}
+.sonde-coords{color:#888;font-size:10px;margin-top:1px;font-variant-numeric:tabular-nums}
+.sonde-target{border:1px solid #000;padding:1px 5px;font-size:9px;float:right;text-transform:uppercase}
+#map-area{flex:1;display:flex;flex-direction:column;min-width:0}
+#map-toolbar{
+  border-bottom:1px solid #000;padding:5px 10px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:#fff;flex-shrink:0;
+}
+.toolbar-lbl{font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.06em}
+.tbtn{
+  border:1px solid #000;background:#fff;color:#000;
+  padding:3px 8px;font-size:10px;cursor:pointer;
+  font-family:'Courier New',monospace;text-transform:uppercase;
+  letter-spacing:.05em;border-radius:0;
+}
+.tbtn:hover{background:#000;color:#fff}
+.tbtn.active{background:#000;color:#fff}
+#map-wrap{flex:1;position:relative;overflow:hidden}
+#map{width:100%;height:100%}
+.leaflet-bar a{font-family:'Courier New',monospace;border-radius:0!important;border-color:#000!important}
+.leaflet-popup-content-wrapper{border-radius:0;border:1px solid #000;font-family:'Courier New',monospace;font-size:11px}
+.leaflet-popup-tip-container{display:none}
+.you-pulse{
+  width:20px;height:20px;border-radius:50%;
+  background:#000;border:2px solid #fff;box-shadow:0 0 0 2px #000;
+  position:relative;
+}
+.you-pulse:after{
+  content:'';position:absolute;inset:-6px;border-radius:50%;
+  border:2px solid #000;animation:pulse 1.5s infinite;
+}
+@keyframes pulse{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(1.8)}}
+.ch-dot{
+  width:16px;height:16px;border-radius:50%;
+  background:#555;border:2px solid #fff;box-shadow:0 0 0 1px #555;
+}
+.sonde-dot{
+  width:14px;height:14px;border-radius:50%;
+  background:#fff;border:2px solid #000;
+}
+.sonde-dot.target{background:#000;}
+.dist-label{
+  background:#fff;border:1px solid #000;
+  padding:1px 4px;font-size:9px;font-family:'Courier New',monospace;
+  white-space:nowrap;pointer-events:none;
+}
+#info-overlay{
+  position:absolute;bottom:10px;left:10px;background:#fff;
+  border:1px solid #000;padding:8px 11px;font-size:10px;
+  font-family:'Courier New',monospace;z-index:800;min-width:180px;pointer-events:none;
+}
+.io-row{display:flex;justify-content:space-between;gap:20px;padding:1px 0}
+.io-l{color:#888;text-transform:uppercase;letter-spacing:.04em}
+.io-v{font-weight:bold;font-variant-numeric:tabular-nums}
+#compass{
+  position:absolute;top:10px;right:10px;width:56px;height:56px;
+  background:#fff;border:1px solid #000;border-radius:50%;z-index:800;
+  display:flex;align-items:center;justify-content:center;pointer-events:none;
+}
+#compass-needle{width:2px;height:40px;position:relative;transform-origin:50% 100%}
+#compass-needle:before{content:'';position:absolute;top:0;left:-4px;right:-4px;
+  height:50%;background:#000;clip-path:polygon(50% 0%,100% 100%,0% 100%)}
+#compass-needle:after{content:'';position:absolute;bottom:0;left:-4px;right:-4px;
+  height:50%;background:#ccc;clip-path:polygon(50% 100%,100% 0%,0% 0%)}
+#status-bar{
+  border-top:1px solid #000;padding:4px 10px;font-size:10px;
+  color:#777;background:#fff;flex-shrink:0;display:flex;align-items:center;gap:8px;
+  font-family:'Courier New',monospace;
+}
+#sdot{width:6px;height:6px;border-radius:50%;background:#ccc;flex-shrink:0}
+#sdot.ok{background:#000}
+#sdot.err{background:#bbb}
+#sdot.live{animation:blink .6s infinite alternate}
+@keyframes blink{from{opacity:.1;background:#000}to{opacity:1;background:#000}}
+
+footer{
+  border-top:1px solid #000;text-align:center;padding:4px;
+  font-size:10px;color:#bbb;flex-shrink:0;background:#fff;
+  font-family:'Courier New',monospace;letter-spacing:.04em;
+}
+#toast{
+  position:fixed;bottom:24px;right:20px;background:#000;color:#fff;
+  padding:7px 14px;font-size:10px;font-family:'Courier New',monospace;
+  text-transform:uppercase;letter-spacing:.07em;opacity:0;
+  transition:opacity .25s;pointer-events:none;z-index:9999;
+}
+#toast.show{opacity:1}
+@media(max-width:900px){
+  #page-body{flex-direction:column}
+  #sidebar{width:100%;border-right:none;border-bottom:2px solid #000;max-height:40vh}
+}
+</style>
+</head>
+<body>
+
+<div id="nav">
+  <nav class="navbar">
+    <a class="logo" href="/">Sonde</a>
+    <div class="hamburger" onclick="document.getElementById('mobileNav').classList.toggle('open')">☰</div>
+    <div class="nav-links" id="mobileNav">
+      <a href="/history">Historical</a>
+      <a href="/3d">KML</a>
+      <a href="/skewt">Skew-T</a>
+      <a href="/burst">Burst</a>
+      <a href="/predict">Predict</a>
+      <a href="/chase" class="active">Chase</a>
+      <a href="/report/submit">Report</a>
+      <a href="/accounts/dash">Dashboard</a>
+      <a href="/api-doc">API</a>
+      <a href="/faq">About</a>
+       <a href="https://github.com/sakul7-stack/sonde">GitHub</a>
+    </div>
+  </nav>
+</div>
+
+<div id="page-body">
+
+<div id="sidebar">
+  <div class="sb-header">Chase Mode — {{ request.user.username|default:"Guest" }}</div>
+  <div class="toggle-wrap">
+    <span class="toggle-label">Live Location</span>
+    <div class="toggle-row">
+      <label class="switch">
+        <input type="checkbox" id="chaseToggle">
+        <span class="knob"></span>
+      </label>
+      <span class="toggle-desc">Share my location<br>with other chasers</span>
+    </div>
+    <label style="margin-top:8px">Chase name</label>
+    <input type="text" id="chaseName" value="{{ request.user.username|default:'Chaser' }}" maxlength="30" placeholder="Your callsign">
+    <button class="btn primary" id="startBtn" onclick="toggleChase()">Start Chasing</button>
+  </div>
+
+  <!-- MY STATUS -->
+  <div class="section">
+    <div class="section-title">My Status</div>
+    <div class="stat-row">
+      <span class="stat-lbl">Status</span>
+      <span class="stat-val off" id="my-status">Idle</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-lbl">Lat</span>
+      <span class="stat-val" id="my-lat">—</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-lbl">Lng</span>
+      <span class="stat-val" id="my-lng">—</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-lbl">Accuracy</span>
+      <span class="stat-val" id="my-acc">—</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-lbl">Speed</span>
+      <span class="stat-val" id="my-spd">—</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-lbl">Heading</span>
+      <span class="stat-val" id="my-hdg">—</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-lbl">Updates sent</span>
+      <span class="stat-val" id="my-cnt">0</span>
+    </div>
+  </div>
+
+  <!-- TARGET SONDE -->
+  <div class="section">
+    <div class="section-title">Target Sonde</div>
+    <div class="stat-row">
+      <span class="stat-lbl">ID</span>
+      <span class="stat-val" id="tgt-id">—</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-lbl">Distance</span>
+      <span class="stat-val" id="tgt-dist">—</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-lbl">Bearing</span>
+      <span class="stat-val" id="tgt-bear">—</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-lbl">Altitude</span>
+      <span class="stat-val" id="tgt-alt">—</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-lbl">ETA</span>
+      <span class="stat-val" id="tgt-eta">—</span>
+    </div>
+    <button class="btn" onclick="clearTarget()">✕ Clear Target</button>
+  </div>
+
+  <!-- ACTIVE CHASERS -->
+  <div class="section">
+    <div class="section-title">Active Chasers (<span id="chaser-count">0</span>)</div>
+    <div id="chaser-list"><span style="font-size:11px;color:#bbb">No active chasers</span></div>
+  </div>
+
+  <!-- LIVE SONDES -->
+  <div class="section">
+    <div class="section-title">Live Sondes</div>
+    <div id="sonde-list"><span style="font-size:11px;color:#bbb">Loading...</span></div>
+    <button class="btn" style="margin-top:8px" onclick="fetchSondes()">↻ Refresh Sondes</button>
+  </div>
+
+  <!-- MAP OPTIONS -->
+  <div class="section">
+    <div class="section-title">Map Options</div>
+    <div class="chk-row"><input type="checkbox" id="optSatellite" onchange="toggleLayer()"><label for="optSatellite">Satellite imagery</label></div>
+    <div class="chk-row"><input type="checkbox" id="optTrails" checked onchange="draw()"><label for="optTrails">Show chaser trails</label></div>
+    <div class="chk-row"><input type="checkbox" id="optRings" checked onchange="toggleRings()"><label for="optRings">Distance rings (1/5/10 km)</label></div>
+    <div class="chk-row"><input type="checkbox" id="optCompass" checked onchange="toggleCompass()"><label for="optCompass">Compass</label></div>
+    <div class="chk-row"><input type="checkbox" id="optFollow" checked><label for="optFollow">Follow my location</label></div>
+    <label style="margin-top:8px">Update interval (s)</label>
+    <select id="updateInterval" onchange="changeInterval()">
+      <option value="3">3 seconds</option>
+      <option value="5" selected>5 seconds</option>
+      <option value="10">10 seconds</option>
+      <option value="30">30 seconds</option>
+    </select>
+  </div>
+
+  <!-- CONNECTION -->
+  <div class="section">
+    <div class="section-title">Connection</div>
+    <div class="stat-row">
+      <span class="stat-lbl">WebSocket</span>
+      <span class="stat-val" id="ws-status">Connecting…</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-lbl">Reconnects</span>
+      <span class="stat-val" id="ws-reconnects">0</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-lbl">Last msg</span>
+      <span class="stat-val" id="ws-last">—</span>
+    </div>
+    <button class="btn" onclick="reconnectWS()">↺ Reconnect</button>
+  </div>
+
+</div><!-- /sidebar -->
+
+<div id="map-area">
+
+  <!-- TOOLBAR -->
+  <div id="map-toolbar">
+    <span class="toolbar-lbl">Chase Map</span>
+    <span style="flex:1"></span>
+    <button class="tbtn" onclick="centerOnMe()">⊕ My Location</button>
+    <button class="tbtn" onclick="fitAll()">⊡ Fit All</button>
+    <button class="tbtn" onclick="fitSondes()">⊙ Fit Sondes</button>
+    <button class="tbtn" id="fullscreenBtn" onclick="toggleFS()">⤢ Fullscreen</button>
+  </div>
+
+  <!-- MAP -->
+  <div id="map-wrap">
+    <div id="map"></div>
+
+    <!-- Compass -->
+    <div id="compass">
+      <div id="compass-needle"></div>
+    </div>
+
+    <!-- Info overlay -->
+    <div id="info-overlay">
+      <div class="io-row"><span class="io-l">Chasers</span><span class="io-v" id="io-chasers">0</span></div>
+      <div class="io-row"><span class="io-l">Sondes</span><span class="io-v" id="io-sondes">0</span></div>
+      <div class="io-row"><span class="io-l">Cursor</span><span class="io-v" id="io-cursor">—</span></div>
+    </div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div id="status-bar">
+    <div id="sdot" class="ok"></div>
+    <span id="smsg">Chase Mode ready — toggle to share your location</span>
+    <span style="flex:1"></span>
+    <span style="font-size:10px;color:#ccc" id="s-time"></span>
+  </div>
+
+</div><!-- /map-area -->
+</div><!-- /page-body -->
+
+<footer>SONDE © 2026 &nbsp;·&nbsp; Chase Mode — Live Radiosonde Chaser Network </footer>
+<div id="toast"></div>
+
+<!-- Leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+
+
+const ME = "{{ request.user.username|default:'' }}";
+let chasing = false;
+let watchId = null;
+let socket = null;
+let wsReconnects = 0;
+let updateCount = 0;
+let myPos = null;         // {lat, lng, acc, speed, heading}
+let target = null;        // {id, lat, lng, alt}
+let chaserMarkers = {};   // username -> {marker, trail, positions[]}
+let sondeMarkers = {};    // sonde_id -> marker
+let ringLayers = [];
+let myMarker = null;
+let myCircle = null;
+let lastWsMsg = null;
+let followMe = true;
+
+const map = L.map('map', {
+  center: [27.7172, 85.3240],
+  zoom: 11,
+  zoomControl: true,
+});
+
+const osmLayer = L.tileLayer(
+    'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+    {
+        attribution: '&copy; OpenStreetMap contributors'
+    }
+);
+const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' })
+
+osmLayer.addTo(map);
+
+map.on('mousemove', function(e){
+  gi('io-cursor').textContent = e.latlng.lat.toFixed(5)+'°, '+e.latlng.lng.toFixed(5)+'°';
+});
+
+function gi(id){return document.getElementById(id);}
+function sv(id,val){const e=gi(id);if(e)e.textContent=val;}
+
+function toast(msg){
+  const el=gi('toast');el.textContent=msg;el.classList.add('show');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+function setStatus(msg,state='ok'){
+  sv('smsg',msg);gi('sdot').className=state;
+}
+
+function fmtDist(m){
+  if(m<1000)return m.toFixed(0)+' m';
+  return (m/1000).toFixed(2)+' km';
+}
+
+function bearing(lat1,lng1,lat2,lng2){
+  const toR=Math.PI/180;
+  const dLng=(lng2-lng1)*toR;
+  const y=Math.sin(dLng)*Math.cos(lat2*toR);
+  const x=Math.cos(lat1*toR)*Math.sin(lat2*toR)-Math.sin(lat1*toR)*Math.cos(lat2*toR)*Math.cos(dLng);
+  return (Math.atan2(y,x)*180/Math.PI+360)%360;
+}
+
+function haversine(lat1,lng1,lat2,lng2){
+  const R=6371000,toR=Math.PI/180;
+  const dLat=(lat2-lat1)*toR,dLng=(lng2-lng1)*toR;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*toR)*Math.cos(lat2*toR)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function cardinalBearing(deg){
+  const dirs=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(deg/22.5)%16];
+}
+
+function updateClock(){sv('s-time',new Date().toLocaleTimeString());}
+setInterval(updateClock,1000);updateClock();
+
+
+function updateRings(){
+  ringLayers.forEach(l=>map.removeLayer(l));
+  ringLayers=[];
+  if(!myPos||!gi('optRings').checked)return;
+  [1000,5000,10000].forEach(r=>{
+    const circle=L.circle([myPos.lat,myPos.lng],{
+      radius:r,color:'#000',weight:.6,fillOpacity:0,dashArray:'4 6'
+    }).addTo(map);
+    const label=L.marker([myPos.lat+r/111320,myPos.lng],{
+      icon:L.divIcon({className:'dist-label',html:fmtDist(r),iconAnchor:[0,8]})
+    }).addTo(map);
+    ringLayers.push(circle,label);
+  });
+}
+
+function toggleRings(){updateRings();}
+
+function toggleCompass(){
+  gi('compass').style.display=gi('optCompass').checked?'flex':'none';
+}
+function rotateCompass(deg){
+  if(deg!=null)gi('compass-needle').style.transform=`rotate(${deg}deg)`;
+}
+
+
+function toggleLayer(){
+  if(gi('optSatellite').checked){map.removeLayer(osmLayer);satLayer.addTo(map);}
+  else{map.removeLayer(satLayer);osmLayer.addTo(map);}
+}
+
+
+function placeMyMarker(lat,lng,acc){
+  const icon=L.divIcon({className:'',html:'<div class="you-pulse"></div>',iconSize:[20,20],iconAnchor:[10,10]});
+  if(!myMarker){
+    myMarker=L.marker([lat,lng],{icon,zIndexOffset:1000}).addTo(map)
+      .bindPopup(`<b>YOU — ${gi('chaseName').value||ME}</b><br>Accuracy: ${acc?acc.toFixed(0)+'m':'?'}`);
+  }else{
+    myMarker.setLatLng([lat,lng]);
+    myMarker.getPopup()&&myMarker.setPopupContent(`<b>YOU — ${gi('chaseName').value||ME}</b><br>Accuracy: ${acc?acc.toFixed(0)+'m':'?'}`);
+  }
+  if(myCircle){myCircle.setLatLng([lat,lng]);myCircle.setRadius(acc||20);}
+  else{
+    myCircle=L.circle([lat,lng],{radius:acc||20,color:'#000',weight:.8,fillOpacity:.04}).addTo(map);
+  }
+}
+
+function setTarget(sonde){
+  target=sonde;
+  sv('tgt-id',sonde.id);
+  sv('tgt-alt',sonde.alt!=null?sonde.alt.toFixed(0)+' m':'—');
+  toast('Target set: '+sonde.id);
+  updateTargetStats();
+}
+
+function clearTarget(){
+  target=null;
+  ['tgt-id','tgt-dist','tgt-bear','tgt-alt','tgt-eta'].forEach(id=>sv(id,'—'));
+  Object.values(sondeMarkers).forEach(m=>{
+    const el=m.getElement();if(el){const d=el.querySelector('.sonde-dot');if(d)d.classList.remove('target');}
+  });
+}
+
+function updateTargetStats(){
+  if(!target||!myPos)return;
+  const dist=haversine(myPos.lat,myPos.lng,target.lat,target.lng);
+  const bear=bearing(myPos.lat,myPos.lng,target.lat,target.lng);
+  sv('tgt-dist',fmtDist(dist));
+  sv('tgt-bear',bear.toFixed(0)+'° '+cardinalBearing(bear));
+  sv('tgt-alt',target.alt!=null?target.alt.toFixed(0)+' m':'—');
+  if(myPos.speed&&myPos.speed>0.5){
+    const eta=dist/myPos.speed;
+    const m=Math.floor(eta/60),s=Math.floor(eta%60);
+    sv('tgt-eta',m+'m '+s+'s');
+  }else{sv('tgt-eta','—');}
+}
+
+function toggleChase(){
+  const toggle=gi('chaseToggle');
+  const btn=gi('startBtn');
+  if(!chasing){
+    startChase();
+    toggle.checked=true;
+    btn.textContent='Stop Chasing';
+    btn.classList.remove('primary');btn.classList.add('danger');
+  }else{
+    stopChase();
+    toggle.checked=false;
+    btn.textContent='Start Chasing';
+    btn.classList.add('primary');btn.classList.remove('danger');
+  }
+}
+
+gi('chaseToggle').addEventListener('change',function(){
+  const btn=gi('startBtn');
+  if(this.checked){
+    startChase();
+    btn.textContent='Stop Chasing';
+    btn.classList.remove('primary');btn.classList.add('danger');
+  }else{
+    stopChase();
+    btn.textContent='Start Chasing';
+    btn.classList.add('primary');btn.classList.remove('danger');
+  }
+});
+
+function startChase(){
+  if(!navigator.geolocation){alert('Geolocation not supported.');return;}
+  chasing=true;
+  sv('my-status','Live');gi('my-status').className='stat-val live';
+  setStatus('Acquiring GPS…','live');
+  const interval=+gi('updateInterval').value*1000;
+  watchId=navigator.geolocation.watchPosition(onPosition,onGeoError,{
+    enableHighAccuracy:true,timeout:10000,maximumAge:interval
+  });
+}
+
+function stopChase(){
+  chasing=false;
+  if(watchId!=null){navigator.geolocation.clearWatch(watchId);watchId=null;}
+  myPos=null;
+  if(myMarker){map.removeLayer(myMarker);myMarker=null;}
+  if(myCircle){map.removeLayer(myCircle);myCircle=null;}
+  ringLayers.forEach(l=>map.removeLayer(l));ringLayers=[];
+  sv('my-status','Idle');gi('my-status').className='stat-val off';
+  ['my-lat','my-lng','my-acc','my-spd','my-hdg'].forEach(id=>sv(id,'—'));
+  setStatus('Chase stopped','ok');
+  // notify server
+  sendWS({type:'deactivate'});
+}
+
+function onPosition(pos){
+  const {latitude:lat,longitude:lng,accuracy:acc,speed,heading}=pos.coords;
+  myPos={lat,lng,acc,speed,heading};
+  placeMyMarker(lat,lng,acc);
+
+  sv('my-lat',lat.toFixed(6));
+  sv('my-lng',lng.toFixed(6));
+  sv('my-acc',acc.toFixed(0)+' m');
+  sv('my-spd',speed!=null?speed.toFixed(1)+' m/s':'—');
+  sv('my-hdg',heading!=null?heading.toFixed(0)+'°':'—');
+
+  if(gi('optFollow').checked)map.setView([lat,lng],map.getZoom());
+  if(heading!=null)rotateCompass(heading);
+  updateRings();
+  updateTargetStats();
+
+  sendWS({
+    type:'location_update',
+    lat,lng,
+    chase_name:gi('chaseName').value||ME,
+    accuracy:acc,
+    speed:speed||0,
+    heading:heading||0,
+  });
+  updateCount++;
+  sv('my-cnt',updateCount);
+  setStatus('Live — '+lat.toFixed(5)+', '+lng.toFixed(5),'live');
+}
+
+function onGeoError(err){
+  setStatus('GPS error: '+err.message,'err');
+  toast('Location error');
+}
+
+function changeInterval(){
+  if(!chasing)return;
+  stopChase();startChase();
+}
+
+
+function connectWS(){
+  const proto=location.protocol==='https:'?'wss:':'ws:';
+  socket=new WebSocket(proto+'//'+location.host+'/ws/chase/');
+
+  socket.onopen=()=>{
+    sv('ws-status','Connected');
+    setStatus('WebSocket connected','ok');
+    toast('Connected to chase network');
+  };
+
+  socket.onmessage=function(e){
+    const data=JSON.parse(e.data);
+    lastWsMsg=new Date();
+    sv('ws-last',lastWsMsg.toLocaleTimeString());
+
+    if(data.type==='chasers_update')updateChasers(data.chasers);
+  };
+
+  socket.onerror=()=>{
+    sv('ws-status','Error');
+    setStatus('WebSocket error','err');
+  };
+
+  socket.onclose=()=>{
+    sv('ws-status','Disconnected');
+    setStatus('WebSocket disconnected — reconnecting…','err');
+    wsReconnects++;
+    sv('ws-reconnects',wsReconnects);
+    setTimeout(connectWS,3000);
+  };
+}
+
+function sendWS(data){
+  if(socket&&socket.readyState===WebSocket.OPEN)
+    socket.send(JSON.stringify(data));
+}
+
+function reconnectWS(){
+  if(socket)socket.close();
+  else connectWS();
+  toast('Reconnecting…');
+}
+function updateChasers(chasers){
+  sv('chaser-count',chasers.length);
+  sv('io-chasers',chasers.length);
+
+  // Render list
+  const el=gi('chaser-list');
+  if(!chasers.length){el.innerHTML='<span style="font-size:11px;color:#bbb">No active chasers</span>';return;}
+
+  el.innerHTML=chasers.map(c=>{
+    const isMe=c.username===ME;
+    const dist=myPos&&c.lat!=null?fmtDist(haversine(myPos.lat,myPos.lng,c.lat,c.lng)):'—';
+    return `<div class="chaser-item">
+      <div>
+        <div class="chaser-name">${c.name||c.username} <span class="chaser-badge ${isMe?'you':'live'}">${isMe?'YOU':'LIVE'}</span></div>
+        <div class="chaser-meta">${c.lat!=null?c.lat.toFixed(4)+', '+c.lng.toFixed(4):'No position'}</div>
+        ${!isMe&&dist!=='—'?`<div class="chaser-meta">${dist} away</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Update map markers
+  const seen=new Set();
+  chasers.forEach(c=>{
+    if(c.username===ME){seen.add(c.username);return;}
+    if(c.lat==null||c.lng==null){seen.add(c.username);return;}
+    seen.add(c.username);
+
+    if(!chaserMarkers[c.username]){
+      const icon=L.divIcon({className:'',html:'<div class="ch-dot"></div>',iconSize:[16,16],iconAnchor:[8,8]});
+      const m=L.marker([c.lat,c.lng],{icon})
+        .addTo(map)
+        .bindPopup(`<b>${c.name||c.username}</b><br>${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}`);
+      chaserMarkers[c.username]={marker:m,positions:[[c.lat,c.lng]],trail:null};
+    }else{
+      const cm=chaserMarkers[c.username];
+      cm.marker.setLatLng([c.lat,c.lng]);
+      cm.marker.getPopup()&&cm.marker.setPopupContent(`<b>${c.name||c.username}</b><br>${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}`);
+      cm.positions.push([c.lat,c.lng]);
+      if(cm.positions.length>120)cm.positions.shift();
+
+      // Update trail
+      if(gi('optTrails').checked){
+        if(cm.trail)map.removeLayer(cm.trail);
+        cm.trail=L.polyline(cm.positions,{color:'#000',weight:1,opacity:.3,dashArray:'3 4'}).addTo(map);
+      }else if(cm.trail){map.removeLayer(cm.trail);cm.trail=null;}
+    }
+  });
+
+  // Remove departed
+  Object.keys(chaserMarkers).forEach(u=>{
+    if(!seen.has(u)){
+      map.removeLayer(chaserMarkers[u].marker);
+      if(chaserMarkers[u].trail)map.removeLayer(chaserMarkers[u].trail);
+      delete chaserMarkers[u];
+    }
+  });
+}
+
+
+async function fetchSondes(){
+  const el=gi('sonde-list');
+  el.innerHTML='<span style="font-size:11px;color:#bbb">Fetching…</span>';
+  try{
+    const res=await fetch('/api/sondes/');
+    if(!res.ok)throw new Error(res.status);
+    const json=await res.json();
+    
+    // Normalize: handle both array of sondes and single sonde objects
+    const raw=Array.isArray(json)?json:[json];
+    const sondes=raw.map(s=>{
+      const latest=s.data&&s.data[0];  // data[0] is the most recent frame
+      return {
+        id: s.sonde_id,
+        lat: latest?.lat ?? null,
+        lng: latest?.lon ?? null,  // note: API uses "lon" not "lng"
+        alt: latest?.alt ?? null,
+      };
+    }).filter(s=>s.lat!=null);
+    
+    renderSondes(sondes);
+  }catch(e){
+    el.innerHTML='<span style="font-size:11px;color:#bbb">Failed to load sondes</span>';
+    console.error(e);
+  }
+}
+
+function renderSondes(sondes){
+  const el=gi('sonde-list');
+  sv('io-sondes',sondes.length);
+
+  if(!sondes.length){
+    el.innerHTML='<span style="font-size:11px;color:#bbb">No live sondes</span>';
+    return;
+  }
+
+  el.innerHTML=sondes.map(s=>{
+    const dist=myPos&&s.lat!=null?fmtDist(haversine(myPos.lat,myPos.lng,s.lat,s.lng)):'—';
+    return `<div class="sonde-item" onclick="clickSonde(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+      <span class="sonde-target">SET TARGET</span>
+      <div class="sonde-id">${s.id||s.sonde_id||'?'}</div>
+      <div class="sonde-coords">
+        ${s.lat!=null?s.lat.toFixed(4)+', '+s.lng.toFixed(4):'No position'}
+        ${dist!=='—'?' · '+dist:''}
+      </div>
+      ${s.alt!=null?`<div class="sonde-coords">${s.alt.toFixed(0)} m ASL</div>`:''}
+    </div>`;
+  }).join('');
+
+  // Place markers
+  const seen=new Set();
+  sondes.forEach(s=>{
+    if(s.lat==null||s.lng==null)return;
+    const id=s.id||s.sonde_id;
+    seen.add(id);
+    const isTgt=target&&target.id===id;
+    const html=`<div class="sonde-dot${isTgt?' target':''}"></div>`;
+    if(!sondeMarkers[id]){
+      const icon=L.divIcon({className:'',html,iconSize:[14,14],iconAnchor:[7,7]});
+      sondeMarkers[id]=L.marker([s.lat,s.lng],{icon})
+        .addTo(map)
+        .bindPopup(`<b>${id}</b><br>${s.alt!=null?s.alt.toFixed(0)+' m':''}`);
+      sondeMarkers[id].on('click',()=>clickSonde(s));
+    }else{
+      sondeMarkers[id].setLatLng([s.lat,s.lng]);
+    }
+    if(target&&target.id===id){target.lat=s.lat;target.lng=s.lng;target.alt=s.alt;updateTargetStats();}
+  });
+
+  // Remove old
+  Object.keys(sondeMarkers).forEach(id=>{
+    if(!seen.has(id)){map.removeLayer(sondeMarkers[id]);delete sondeMarkers[id];}
+  });
+}
+
+function clickSonde(s){
+  const id=s.id||s.sonde_id;
+  setTarget({id,lat:s.lat,lng:s.lng,alt:s.alt||null});
+  if(s.lat!=null)map.setView([s.lat,s.lng],13);
+}
+
+// Sonde path & prediction layers
+let sondePathLines = {};   // sonde_id -> polyline
+let sondePredLines = {};   // sonde_id -> polyline
+let sondeBurstMarkers = {};
+let sondeLandMarkers = {};
+
+async function fetchSondePaths(){
+  try{
+    const res=await fetch('/api/sondes/');
+    if(!res.ok)return;
+    const json=await res.json();
+    const raw=Array.isArray(json)?json:[json];
+
+    const seen=new Set();
+    for(const s of raw){
+      const id=s.sonde_id;
+      seen.add(id);
+
+      // Draw actual path
+      if(s.data&&s.data.length){
+        const coords=s.data.map(p=>[p.lat,p.lon]).filter(p=>p[0]&&p[1]);
+        if(sondePathLines[id]){
+          sondePathLines[id].setLatLngs(coords);
+        }else{
+          sondePathLines[id]=L.polyline(coords,{color:'#e00',weight:2,opacity:.8}).addTo(map);
+        }
+      }
+
+      // Draw prediction
+      if(!sondePredLines[id]){
+        try{
+          const pr=await fetch(`/api/pred/?sonde_id=${id}`);
+          const raw2=await pr.json();
+          if(raw2.data&&raw2.data.prediction){
+            const pred=raw2.data.prediction;
+            const ascent=pred[0].trajectory.map(p=>[p.latitude,p.longitude]);
+            const descent=pred[1].trajectory.map(p=>[p.latitude,p.longitude]);
+            sondePredLines[id]=L.polyline([...ascent,...descent],{
+              color:'#00f',weight:2,opacity:.7,dashArray:'6 4'
+            }).addTo(map);
+
+            // Burst marker
+            const burst=pred[0].trajectory.at(-1);
+            sondeBurstMarkers[id]=L.circleMarker([burst.latitude,burst.longitude],{
+              radius:6,color:'#f80',fillColor:'#f80',fillOpacity:1,weight:2
+            }).addTo(map)
+             .bindPopup(`<b>Predicted Burst</b><br>${burst.latitude.toFixed(4)}, ${burst.longitude.toFixed(4)}<br>${burst.altitude.toFixed(0)} m`);
+
+            // Landing marker
+            const land=pred[1].trajectory.at(-1);
+            sondeLandMarkers[id]=L.circleMarker([land.latitude,land.longitude],{
+              radius:7,color:'#00f',fillColor:'#fff',fillOpacity:1,weight:2
+            }).addTo(map)
+             .bindPopup(`<b>Predicted Landing</b><br>${land.latitude.toFixed(4)}, ${land.longitude.toFixed(4)}<br>${land.altitude.toFixed(0)} m`);
+          }
+        }catch(_){}
+      }
+    }
+
+    // Remove old paths for sondes no longer in feed
+    Object.keys(sondePathLines).forEach(id=>{
+      if(!seen.has(id)){
+        map.removeLayer(sondePathLines[id]);delete sondePathLines[id];
+        if(sondePredLines[id]){map.removeLayer(sondePredLines[id]);delete sondePredLines[id];}
+        if(sondeBurstMarkers[id]){map.removeLayer(sondeBurstMarkers[id]);delete sondeBurstMarkers[id];}
+        if(sondeLandMarkers[id]){map.removeLayer(sondeLandMarkers[id]);delete sondeLandMarkers[id];}
+      }
+    });
+  }catch(e){console.error('fetchSondePaths:',e);}
+}
+
+
+/* Auto-refresh sondes every 30s */
+setInterval(fetchSondes,30000);
+setInterval(fetchSondePaths,30000);
+
+function centerOnMe(){
+  if(myPos)map.setView([myPos.lat,myPos.lng],15);
+  else toast('No position yet');
+}
+
+function fitAll(){
+  const pts=[];
+  if(myPos)pts.push([myPos.lat,myPos.lng]);
+  Object.values(chaserMarkers).forEach(c=>pts.push(c.marker.getLatLng()));
+  Object.values(sondeMarkers).forEach(m=>pts.push(m.getLatLng()));
+  if(pts.length)map.fitBounds(L.latLngBounds(pts).pad(.1));
+}
+
+function fitSondes(){
+  const pts=Object.values(sondeMarkers).map(m=>m.getLatLng());
+  if(pts.length)map.fitBounds(L.latLngBounds(pts).pad(.15));
+  else toast('No sondes on map');
+}
+
+function toggleFS(){
+  if(!document.fullscreenElement)gi('map-area').requestFullscreen();
+  else document.exitFullscreen();
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  const k=e.key.toLowerCase();
+  if(k==='c')toggleChase();
+  if(k==='m')centerOnMe();
+  if(k==='f')fitAll();
+  if(k==='r')fetchSondes();
+  if(k==='escape')clearTarget();
+});
+
+
+window.addEventListener('load',()=>{
+  connectWS();
+  fetchSondes();
+    fetchSondePaths();     
+  toggleCompass();
+});
+</script>
+</body>
+</html>

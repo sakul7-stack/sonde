@@ -62,6 +62,7 @@ hr {
 
     <h2>Sign In</h2>
 
+    <!-- EMAIL / PASSWORD LOGIN -->
     <form method="POST" action="">
         {% csrf_token %}
         {{ form.as_p }}
@@ -71,6 +72,7 @@ hr {
 
     <hr>
 
+    <!-- GOOGLE LOGIN -->
     <p style="text-align:center; font-size:12px;">Or continue with</p>
 
     <a href="/accounts/google/login/?process=login">
@@ -81,6 +83,7 @@ hr {
 
     <hr>
 
+    <!-- LINKS -->
     <p style="text-align:center; font-size:12px;">
         No account?
         <a href="/accounts/signup/">Sign up</a>

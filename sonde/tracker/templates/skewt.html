@@ -1,0 +1,1241 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sonde — Skew-T Viewer</title>
+<link rel="icon" href="/static/tracker/ballon.png" type="image/png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Courier New',Courier,monospace;
+  background:#fff;color:#000;
+  display:flex;flex-direction:column;
+  height:100vh;overflow:hidden;
+}
+
+#nav{border-bottom:2px solid #000;flex-shrink:0;background:#fff;z-index:100}
+.navbar{display:flex;justify-content:space-between;align-items:center;padding:9px 16px}
+.logo{font-weight:bold;font-size:16px;color:#000;text-decoration:none;
+      letter-spacing:.06em;text-transform:uppercase}
+.nav-links a{text-decoration:none;color:#000;margin-left:14px;font-size:12px;
+             text-transform:uppercase;letter-spacing:.06em}
+.nav-links a:hover{text-decoration:underline}
+.nav-links a.active{border-bottom:2px solid #000;padding-bottom:1px}
+
+/* hamburger */
+.hamburger{display:none;font-size:22px;cursor:pointer;user-select:none}
+@media(max-width:900px){
+  .hamburger{display:block}
+  .nav-links{position:absolute;top:48px;right:0;background:#fff;border:1px solid #000;
+             display:none;flex-direction:column;width:200px;z-index:999}
+  .nav-links.open{display:flex}
+  .nav-links a{margin:0;padding:10px 16px;border-bottom:1px solid #eee}
+}
+#page-body{flex:1;min-height:0;display:flex;overflow:hidden}
+
+#sidebar{
+  width:268px;flex-shrink:0;border-right:2px solid #000;
+  display:flex;flex-direction:column;overflow-y:auto;background:#fff;
+}
+#sidebar::-webkit-scrollbar{width:4px}
+#sidebar::-webkit-scrollbar-thumb{background:#000}
+
+.sb-header{
+  border-bottom:1px solid #000;padding:8px 12px;
+  font-size:10px;font-weight:bold;text-transform:uppercase;
+  letter-spacing:.1em;background:#000;color:#fff;flex-shrink:0;
+}
+
+.section{border-bottom:1px solid #000;padding:10px 12px}
+.section-title{
+  font-size:9px;font-weight:bold;text-transform:uppercase;
+  letter-spacing:.1em;color:#888;margin-bottom:8px;
+}
+
+label{
+  display:block;font-size:11px;color:#555;margin-bottom:2px;margin-top:7px;
+  text-transform:uppercase;letter-spacing:.04em;
+}
+label:first-of-type{margin-top:0}
+
+input[type=text],input[type=number],select{
+  width:100%;border:1px solid #000;padding:5px 8px;
+  font-size:12px;font-family:'Courier New',monospace;
+  background:#fff;color:#000;outline:none;border-radius:0;-webkit-appearance:none;
+}
+input[type=text]:focus,input[type=number]:focus,select:focus{background:#000;color:#fff}
+select option{background:#fff;color:#000}
+input[type=range]{width:100%;accent-color:#000;cursor:pointer}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+.btn{
+  border:1px solid #000;background:#fff;color:#000;
+  padding:6px 10px;font-size:11px;cursor:pointer;
+  font-family:'Courier New',monospace;width:100%;margin-top:6px;
+  text-align:center;text-transform:uppercase;letter-spacing:.06em;border-radius:0;
+}
+.btn:hover{background:#000;color:#fff}
+.btn.primary{background:#000;color:#fff}
+.btn.primary:hover{background:#333}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+
+.btn-row{display:flex;gap:6px;margin-top:6px}
+.btn-row .btn{margin-top:0;flex:1}
+
+.btn-sm{
+  border:1px solid #000;background:#fff;color:#000;
+  padding:3px 8px;font-size:10px;cursor:pointer;
+  font-family:'Courier New',monospace;text-transform:uppercase;
+  letter-spacing:.05em;border-radius:0;
+}
+.btn-sm:hover{background:#000;color:#fff}
+
+.chk-row{display:flex;align-items:center;gap:7px;margin-top:5px;cursor:pointer}
+.chk-row input[type=checkbox]{width:13px;height:13px;accent-color:#000;cursor:pointer;flex-shrink:0}
+.chk-row label{margin:0;color:#000;font-size:11px;cursor:pointer;text-transform:none;letter-spacing:0}
+
+.range-row{display:flex;align-items:center;gap:8px;margin-top:4px}
+.range-row input[type=range]{flex:1}
+.range-lbl{font-size:11px;font-variant-numeric:tabular-nums;min-width:34px;text-align:right}
+
+.idx-row{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:11px;padding:3px 0;border-bottom:1px solid #eee;
+}
+.idx-row:last-child{border-bottom:none}
+.idx-lbl{color:#888}
+.idx-val{font-weight:bold;font-variant-numeric:tabular-nums}
+.idx-val.good{color:#000}
+.idx-val.warn{color:#555}
+.idx-val.bad{color:#000;text-decoration:underline}
+
+/* ════════════════════════════════════════════
+   CHART AREA
+════════════════════════════════════════════ */
+#chart-area{flex:1;display:flex;flex-direction:column;min-width:0}
+
+#stats-strip{
+  border-bottom:1px solid #000;display:grid;
+  grid-template-columns:repeat(6,1fr);flex-shrink:0;background:#fff;
+}
+.stat-cell{padding:6px 10px;border-right:1px solid #000}
+.stat-cell:last-child{border-right:none}
+.stat-label{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.06em}
+.stat-val2{font-size:13px;font-weight:bold;margin-top:2px;font-variant-numeric:tabular-nums}
+
+#toolbar{
+  border-bottom:1px solid #000;padding:5px 10px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:#fff;flex-shrink:0;
+}
+.toolbar-lbl{font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.06em}
+
+#canvas-wrap{flex:1;position:relative;overflow:hidden;background:#fff}
+canvas#skewt{display:block;width:100%;height:100%}
+
+/* crosshair */
+#chH,#chV{position:absolute;pointer-events:none;display:none;z-index:5}
+#chH{height:1px;background:#000;opacity:.15;left:0;right:0}
+#chV{width:1px;background:#000;opacity:.15;top:0;bottom:0}
+
+/* tooltip */
+#tooltip{
+  position:absolute;background:#fff;border:1px solid #000;
+  padding:8px 11px;font-size:11px;font-family:'Courier New',monospace;
+  pointer-events:none;display:none;min-width:155px;z-index:20;
+}
+.tt-row{display:flex;justify-content:space-between;gap:14px;padding:1px 0}
+.tt-l{color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.tt-v{font-weight:bold;color:#000}
+
+/* toast */
+#toast{
+  position:fixed;bottom:24px;right:20px;background:#000;color:#fff;
+  padding:7px 14px;font-size:10px;font-family:'Courier New',monospace;
+  text-transform:uppercase;letter-spacing:.07em;opacity:0;
+  transition:opacity .25s;pointer-events:none;z-index:999;
+}
+#toast.show{opacity:1}
+
+/* status bar */
+#status-bar{
+  border-top:1px solid #000;padding:4px 10px;font-size:10px;
+  color:#777;background:#fff;flex-shrink:0;display:flex;align-items:center;gap:8px;
+  font-family:'Courier New',monospace;
+}
+#sdot{width:6px;height:6px;border-radius:50%;background:#ccc;flex-shrink:0}
+#sdot.running{animation:blink .5s infinite alternate}
+#sdot.ok{background:#000}
+#sdot.err{background:#bbb}
+@keyframes blink{from{opacity:.1}to{opacity:1;background:#000}}
+
+footer{
+  border-top:1px solid #000;text-align:center;padding:4px;
+  font-size:10px;color:#bbb;flex-shrink:0;background:#fff;
+  font-family:'Courier New',monospace;letter-spacing:.04em;
+}
+
+
+@media(max-width:900px){
+  #page-body{flex-direction:column}
+  #sidebar{width:100%;border-right:none;border-bottom:2px solid #000;max-height:44vh}
+  #stats-strip{grid-template-columns:repeat(3,1fr)}
+  .stat-cell:nth-child(3){border-right:none}
+  .stat-cell:nth-child(4){border-top:1px solid #000}
+  .stat-cell:nth-child(5){border-top:1px solid #000}
+  .stat-cell:nth-child(6){border-top:1px solid #000;border-right:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ NAV ══ -->
+<div id="nav">
+  <nav class="navbar">
+    <a class="logo" href="/">Sonde</a>
+    <div class="hamburger" onclick="document.getElementById('mobileNav').classList.toggle('open')">☰</div>
+    <div class="nav-links" id="mobileNav">
+            <a href="/history">Historical</a>
+      <a href="/3d">KML</a>
+      <a href="/skewt" class="active">Skew-T</a>
+      <a href="/burst">Burst</a>
+      <a href="/predict">Predict</a>
+      <a href="/chase" >Chase</a>
+      <a href="/report/submit">Report</a>
+      <a href="/accounts/dash">Dashboard</a>
+      <a href="/api-doc">API</a>
+      <a href="/faq">About</a>
+       <a href="https://github.com/sakul7-stack/sonde">GitHub</a>
+    </div>
+  </nav>
+</div>
+
+<div id="page-body">
+
+<!-- ══════════ SIDEBAR ══════════ -->
+<div id="sidebar">
+  <div class="sb-header">Sounding Viewer</div>
+
+  <!-- SONDE LOOKUP -->
+  <div class="section">
+    <div class="section-title">Sonde</div>
+    <label>Sonde ID</label>
+    <input type="text" id="sondeId" placeholder="e.g. R3521234" autocomplete="off">
+    <button class="btn primary" id="loadBtn" onclick="loadSonde()">&#9654; Load sounding</button>
+    <div class="btn-row">
+      <button class="btn btn-sm" onclick="loadDemo()">Demo data</button>
+      <button class="btn btn-sm" onclick="clearChart()">Clear</button>
+    </div>
+    <div id="recentList" style="margin-top:8px"></div>
+  </div>
+
+  <!-- DIAGRAM TYPE -->
+  <div class="section">
+    <div class="section-title">Diagram type</div>
+    <label>Type</label>
+    <select id="chartType" onchange="onTypeChange()">
+      <option value="skewt">Skew-T Log-P</option>
+      <option value="emagram">Emagram</option>
+      <option value="stuve">Stüve</option>
+      <option value="tephigram">Tephigram</option>
+      <option value="hodograph">Hodograph</option>
+    </select>
+  </div>
+
+  <!-- AXES -->
+  <div class="section" id="axesSection">
+    <div class="section-title">Axes</div>
+    <label>Skew factor <span style="font-size:9px;color:#aaa">(Skew-T / Tephigram)</span></label>
+    <div class="range-row">
+      <input type="range" id="skew" min="15" max="75" value="45" step="1"
+             oninput="document.getElementById('skewLbl').textContent=this.value+'°';draw()">
+      <span class="range-lbl" id="skewLbl">45°</span>
+    </div>
+    <label>Pressure top (hPa)</label>
+    <select id="pTop" onchange="draw()">
+      <option value="100" selected>100</option>
+      <option value="150">150</option>
+      <option value="200">200</option>
+      <option value="300">300</option>
+    </select>
+    <label>Temp range (°C)</label>
+    <div class="row2">
+      <div><label style="font-size:10px">Min</label><input type="number" id="tMin" value="-40" onchange="draw()"></div>
+      <div><label style="font-size:10px">Max</label><input type="number" id="tMax" value="60" onchange="draw()"></div>
+    </div>
+  </div>
+
+  <!-- OVERLAYS -->
+  <div class="section" id="overlaysSection">
+    <div class="section-title">Overlays</div>
+    <div class="chk-row"><input type="checkbox" id="cIso"    checked onchange="draw()"><label for="cIso">Isotherms</label></div>
+    <div class="chk-row"><input type="checkbox" id="cDry"    checked onchange="draw()"><label for="cDry">Dry adiabats</label></div>
+    <div class="chk-row"><input type="checkbox" id="cMoist"  checked onchange="draw()"><label for="cMoist">Moist adiabats</label></div>
+    <div class="chk-row"><input type="checkbox" id="cFreeze" checked onchange="draw()"><label for="cFreeze">0°C isotherm</label></div>
+    <div class="chk-row"><input type="checkbox" id="cBarbs"  checked onchange="draw()"><label for="cBarbs">Wind barbs</label></div>
+    <div class="chk-row"><input type="checkbox" id="cCAPE"         onchange="draw()"><label for="cCAPE">CAPE / CIN shading</label></div>
+    <div class="chk-row"><input type="checkbox" id="cLCL"          onchange="draw()"><label for="cLCL">LCL level</label></div>
+    <div class="chk-row"><input type="checkbox" id="cGrid"   checked onchange="draw()"><label for="cGrid">Pressure grid</label></div>
+    <div class="chk-row"><input type="checkbox" id="cLegend" checked onchange="draw()"><label for="cLegend">Legend</label></div>
+    <div class="chk-row"><input type="checkbox" id="cCross"  checked><label for="cCross">Crosshair</label></div>
+  </div>
+
+  <!-- LINE STYLE -->
+  <div class="section">
+    <div class="section-title">Line style</div>
+    <label>Sounding line weight</label>
+    <select id="lwT" onchange="draw()">
+      <option value="1">Hair (1px)</option>
+      <option value="1.5">Thin (1.5px)</option>
+      <option value="2" selected>Normal (2px)</option>
+      <option value="3">Thick (3px)</option>
+      <option value="4">Bold (4px)</option>
+    </select>
+    <label>Isotherm spacing</label>
+    <select id="isoStep" onchange="draw()">
+      <option value="5">5°C</option>
+      <option value="10" selected>10°C</option>
+      <option value="20">20°C</option>
+    </select>
+    <label>Adiabat spacing</label>
+    <select id="adStep" onchange="draw()">
+      <option value="5">5 K</option>
+      <option value="10" selected>10 K</option>
+      <option value="20">20 K</option>
+    </select>
+    <label>Isotherm opacity</label>
+    <div class="range-row">
+      <input type="range" id="isoOp" min="5" max="80" value="35" step="5"
+             oninput="document.getElementById('isoOpLbl').textContent=this.value+'%';draw()">
+      <span class="range-lbl" id="isoOpLbl">35%</span>
+    </div>
+    <label>Adiabat opacity</label>
+    <div class="range-row">
+      <input type="range" id="adOp" min="5" max="80" value="30" step="5"
+             oninput="document.getElementById('adOpLbl').textContent=this.value+'%';draw()">
+      <span class="range-lbl" id="adOpLbl">30%</span>
+    </div>
+    <label>Max wind barbs</label>
+    <select id="barbN" onchange="draw()">
+      <option value="12">12</option>
+      <option value="20" selected>20</option>
+      <option value="30">30</option>
+      <option value="50">50</option>
+    </select>
+  </div>
+
+  <!-- DATA FILTER -->
+  <div class="section">
+    <div class="section-title">Data filter</div>
+    <label>Level filter</label>
+    <select id="lvlFilter" onchange="draw()">
+      <option value="all">All levels</option>
+      <option value="man">Mandatory only</option>
+    </select>
+    <label>Altitude window (km)</label>
+    <div class="row2">
+      <div><label style="font-size:10px">From</label><input type="number" id="altFrom" value="0" min="0" step="1" onchange="draw()"></div>
+      <div><label style="font-size:10px">To</label><input type="number" id="altTo" value="35" min="1" step="1" onchange="draw()"></div>
+    </div>
+  </div>
+
+  <!-- EXPORT -->
+  <div class="section">
+    <div class="section-title">Export</div>
+    <div class="btn-row">
+      <button class="btn btn-sm" onclick="exportPNG()">PNG</button>
+      <button class="btn btn-sm" onclick="exportCSV()">CSV</button>
+      <button class="btn btn-sm" onclick="exportJSON()">JSON</button>
+    </div>
+    <button class="btn" onclick="printChart()">&#128438; Print chart</button>
+  </div>
+
+  <!-- INSTABILITY INDICES -->
+  <div class="section">
+    <div class="section-title">Instability indices</div>
+    <div class="idx-row"><span class="idx-lbl">CAPE (J/kg)</span><span class="idx-val" id="i-cape">—</span></div>
+    <div class="idx-row"><span class="idx-lbl">CIN (J/kg)</span><span class="idx-val" id="i-cin">—</span></div>
+    <div class="idx-row"><span class="idx-lbl">Lifted index</span><span class="idx-val" id="i-li">—</span></div>
+    <div class="idx-row"><span class="idx-lbl">K-index</span><span class="idx-val" id="i-ki">—</span></div>
+    <div class="idx-row"><span class="idx-lbl">Showalter</span><span class="idx-val" id="i-si">—</span></div>
+    <div class="idx-row"><span class="idx-lbl">Total-Totals</span><span class="idx-val" id="i-tt">—</span></div>
+    <div class="idx-row"><span class="idx-lbl">PW (mm)</span><span class="idx-val" id="i-pw">—</span></div>
+    <div class="idx-row"><span class="idx-lbl">LCL (hPa)</span><span class="idx-val" id="i-lcl">—</span></div>
+    <div class="idx-row"><span class="idx-lbl">Tropopause</span><span class="idx-val" id="i-trop">—</span></div>
+  </div>
+
+  <!-- WIND SUMMARY -->
+  <div class="section">
+    <div class="section-title">Wind summary</div>
+    <div class="idx-row"><span class="idx-lbl">Max speed (m/s)</span><span class="idx-val" id="w-max">—</span></div>
+    <div class="idx-row"><span class="idx-lbl">Max at (hPa)</span><span class="idx-val" id="w-maxp">—</span></div>
+    <div class="idx-row"><span class="idx-lbl">0–1 km shear</span><span class="idx-val" id="w-s01">—</span></div>
+    <div class="idx-row"><span class="idx-lbl">0–6 km shear</span><span class="idx-val" id="w-s06">—</span></div>
+  </div>
+
+</div><!-- /sidebar -->
+
+<!-- ══════════ CHART AREA ══════════ -->
+<div id="chart-area">
+
+  <div id="stats-strip">
+    <div class="stat-cell"><div class="stat-label">Sfc temp</div><div class="stat-val2" id="s-t">—</div></div>
+    <div class="stat-cell"><div class="stat-label">Sfc dewpoint</div><div class="stat-val2" id="s-dp">—</div></div>
+    <div class="stat-cell"><div class="stat-label">Sfc pressure</div><div class="stat-val2" id="s-p">—</div></div>
+    <div class="stat-cell"><div class="stat-label">Max altitude</div><div class="stat-val2" id="s-alt">—</div></div>
+    <div class="stat-cell"><div class="stat-label">Levels</div><div class="stat-val2" id="s-lvl">—</div></div>
+    <div class="stat-cell"><div class="stat-label">Sonde ID</div><div class="stat-val2" id="s-id" style="font-size:11px">—</div></div>
+  </div>
+
+  <div id="toolbar">
+    <span class="toolbar-lbl" id="toolbarTitle">Skew-T / Log-P</span>
+    <span style="flex:1"></span>
+    <span id="cursorInfo" style="font-size:10px;color:#888;font-variant-numeric:tabular-nums">hover chart</span>
+    <button class="btn-sm" onclick="resetView()">Reset</button>
+    <button class="btn-sm" onclick="toggleFS()">Fullscreen</button>
+  </div>
+
+  <div id="canvas-wrap">
+    <canvas id="skewt"></canvas>
+    <div id="chH"></div>
+    <div id="chV"></div>
+    <div id="tooltip">
+      <div class="tt-row"><span class="tt-l">Pressure</span><span class="tt-v" id="tt-p">—</span></div>
+      <div class="tt-row"><span class="tt-l">Altitude</span><span class="tt-v" id="tt-a">—</span></div>
+      <div class="tt-row"><span class="tt-l">Temp</span><span class="tt-v" id="tt-t">—</span></div>
+      <div class="tt-row"><span class="tt-l">Dewpoint</span><span class="tt-v" id="tt-d">—</span></div>
+      <div class="tt-row"><span class="tt-l">Humidity</span><span class="tt-v" id="tt-r">—</span></div>
+      <div class="tt-row"><span class="tt-l">Wind</span><span class="tt-v" id="tt-w">—</span></div>
+      <div class="tt-row"><span class="tt-l">θ (pot. temp)</span><span class="tt-v" id="tt-th">—</span></div>
+      <div class="tt-row"><span class="tt-l">θe (eq. pot.)</span><span class="tt-v" id="tt-the">—</span></div>
+    </div>
+    <div id="toast"></div>
+  </div>
+
+  <div id="status-bar">
+    <div id="sdot" class="ok"></div>
+    <span id="smsg">Enter a sonde ID and press Load — or click Demo data</span>
+    <span style="flex:1"></span>
+    <span style="font-size:10px;color:#ccc">GET /data/atmosphere/?sonde_id=</span>
+  </div>
+
+</div><!-- /chart-area -->
+</div><!-- /page-body -->
+
+<footer>SONDE © 2026 &nbsp;·&nbsp; Skew-T / Log-P Atmospheric Sounding Viewer &nbsp;·&nbsp; Nepal</footer>
+
+<script>
+/* ═══════════════════════════════════════════════
+   DEMO DATA
+═══════════════════════════════════════════════ */
+const DEMO_RAW=(()=>{
+  const alts=[0,200,400,700,1000,1300,1600,2000,2500,3000,3500,4000,5000,6000,7000,
+              8000,9000,10000,11000,12000,13000,14000,16000,18000,20000,25000,30000];
+  const T=[22,20,18,15,12,10,7,5,2,-1,-5,-9,-17,-26,-35,-44,-52,-57,-59,-61,-62,-62,-58,-54,-50,-44,-38];
+  const H=[76,72,68,63,58,54,50,48,46,44,50,55,46,40,34,28,22,16,12,8,6,5,5,5,5,5,5];
+  const S=[3,4,5,7,10,12,14,16,18,20,22,24,27,30,33,35,37,40,38,36,33,30,25,20,16,12,10];
+  const D=[160,172,185,198,208,215,220,225,230,235,239,243,248,252,256,259,263,266,268,266,262,260,255,250,245,238,230];
+  return alts.map((a,i)=>({alt:a,temp:T[i],humidity:H[i],vel_h:S[i],heading:D[i]}));
+})();
+
+/* ═══════════════════════════════════════════════
+   PHYSICS
+═══════════════════════════════════════════════ */
+function estP(alt,temp,hum){
+  if(hum<=0)hum=1;
+  const T=temp+273.15,es=6.112*Math.exp(17.67*temp/(temp+243.5)),e=(hum/100)*es;
+  const Tv=T/(1-(e/1013.25)*(1-0.622));
+  return 1013.25*Math.exp(-alt*(9.80665/(287.05*Tv)));
+}
+function dew(temp,hum){
+  if(hum<=0)return temp-30;
+  const g=Math.log(hum/100)+(17.67*temp/(temp+243.5));
+  return 243.5*g/(17.67-g);
+}
+function potT(temp,p){return(temp+273.15)*Math.pow(1013.25/p,0.286)-273.15;}
+function eqPotT(temp,dp,p){
+  const Tk=temp+273.15,es=6.112*Math.exp(17.67*dp/(dp+243.5)),ws=0.622*es/(p-es);
+  return Tk*Math.pow(1013.25/p,0.286)*Math.exp(2.5e6*ws/(1004*Tk))-273.15;
+}
+function lclP(temp,dp,p){
+  const Tk=temp+273.15,Td=dp+273.15;
+  const Tl=1/(1/(Td-56)+Math.log(Tk/Td)/800)+56;
+  return p*Math.pow(Tl/Tk,3.4965);
+}
+
+function processRaw(raw){
+  return raw.map(t=>({
+    alt:      t.alt,
+    temp:     t.temp,
+    humidity: t.humidity,
+    vel_h:    t.vel_h??null,
+    heading:  t.heading??null,
+    pressure: t.pressure_estimated!==undefined?t.pressure_estimated:estP(t.alt,t.temp,t.humidity),
+    dewpoint: t.dewpoint!==undefined?t.dewpoint:dew(t.temp,t.humidity),
+  })).sort((a,b)=>b.pressure-a.pressure);
+}
+
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+let DATA=[];
+let sondeId='';
+let serverIndices=null;
+let recent=JSON.parse(localStorage.getItem('skewt_recent')||'[]');
+
+/* ═══════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════ */
+function sv(id,val){const e=document.getElementById(id);if(e)e.textContent=val;}
+function gi(id){return document.getElementById(id);}
+function gv(id){return gi(id).value;}
+
+function toast(msg){
+  const el=gi('toast');el.textContent=msg;el.classList.add('show');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2000);
+}
+function setStatus(msg,state='ok'){
+  sv('smsg',msg);gi('sdot').className=state;
+}
+
+/* ═══════════════════════════════════════════════
+   FILL STATS STRIP & INDICES
+═══════════════════════════════════════════════ */
+function fillStrip(){
+  if(!DATA.length)return;
+  const sfc=DATA[0],top=DATA[DATA.length-1];
+  sv('s-t',sfc.temp+'°C');
+  sv('s-dp',sfc.dewpoint.toFixed(1)+'°C');
+  sv('s-p',sfc.pressure.toFixed(0)+' hPa');
+  sv('s-alt',(top.alt/1000).toFixed(1)+' km');
+  sv('s-lvl',DATA.length);
+  sv('s-id',sondeId||'DEMO');
+}
+
+function fillIndices(idx){
+  if(!idx)return;
+  function fc(id,val,lo,hi){
+    const el=gi(id);if(!el||val==null){if(el)el.textContent='—';return;}
+    el.textContent=val;
+    el.className='idx-val '+(val<=lo?'good':val<=hi?'warn':'bad');
+  }
+  sv('i-cape',idx.cape??'—');
+  fc('i-cape',idx.cape,500,2000);
+  sv('i-cin',idx.cin??'—');
+  sv('i-li',idx.li??'—');
+  fc('i-li',idx.li,-3,0);
+  sv('i-ki',idx.k_index??'—');
+  sv('i-si',idx.showalter??'—');
+  sv('i-tt',idx.total_totals??'—');
+  sv('i-pw',idx.pw_mm!=null?idx.pw_mm+' mm':'—');
+  sv('i-lcl',idx.lcl_hpa!=null?idx.lcl_hpa+' hPa':'—');
+  const trop=idx.tropopause_hpa?idx.tropopause_hpa+' hPa / '+idx.tropopause_km+' km':'—';
+  sv('i-trop',trop);
+  sv('w-max',idx.max_wind_ms!=null?idx.max_wind_ms+' m/s':'—');
+  sv('w-maxp',idx.max_wind_hpa!=null?idx.max_wind_hpa+' hPa':'—');
+  sv('w-s01',idx.shear_01_ms!=null?idx.shear_01_ms+' m/s':'—');
+  sv('w-s06',idx.shear_06_ms!=null?idx.shear_06_ms+' m/s':'—');
+}
+
+function fillIndicesFromData(){
+  if(!DATA.length)return;
+  const sfc=DATA[0];
+  const dd=sfc.temp-sfc.dewpoint;
+  const cape=Math.max(0,sfc.temp>18&&dd<7?Math.round(1800-dd*130):Math.max(0,50-dd*8));
+  const cin=cape>200?-Math.round(18+dd*4):0;
+  const l500=DATA.reduce((b,d)=>Math.abs(d.pressure-500)<Math.abs(b.pressure-500)?d:b,DATA[0]);
+  const parcel500=sfc.temp-6.5*(l500.alt-sfc.alt)/1000;
+  const li=+(l500.temp-parcel500).toFixed(1);
+  const l850=DATA.reduce((b,d)=>Math.abs(d.pressure-850)<Math.abs(b.pressure-850)?d:b,DATA[0]);
+  const l700=DATA.reduce((b,d)=>Math.abs(d.pressure-700)<Math.abs(b.pressure-700)?d:b,DATA[0]);
+  const ki=Math.round((l850.temp-l500.temp)+l850.dewpoint-(l700.temp-l700.dewpoint));
+  const tt=Math.round(l850.temp+l850.dewpoint-2*l500.temp);
+  const pw=Math.round(sfc.humidity*0.31);
+  const lcl=Math.round(lclP(sfc.temp,sfc.dewpoint,sfc.pressure));
+  let trop='—';
+  for(let i=2;i<DATA.length-1;i++){
+    if(DATA[i].pressure<300&&DATA[i].temp>DATA[i-1].temp){
+      trop=DATA[i].pressure.toFixed(0)+' hPa / '+(DATA[i].alt/1000).toFixed(1)+' km';break;
+    }
+  }
+  const wl=DATA.filter(d=>d.vel_h!=null);
+  const mw=wl.length?wl.reduce((b,d)=>d.vel_h>b.vel_h?d:b):null;
+  fillIndices({
+    cape,cin,li,k_index:ki,showalter:+(li+1.2).toFixed(1),total_totals:tt,
+    pw_mm:pw,lcl_hpa:lcl,tropopause_hpa:null,tropopause_km:null,
+    max_wind_ms:mw?+mw.vel_h.toFixed(1):null,
+    max_wind_hpa:mw?+mw.pressure.toFixed(0):null,
+    shear_01_ms:null,shear_06_ms:null,
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   CANVAS / METRICS
+═══════════════════════════════════════════════ */
+const canvas=gi('skewt');
+const ctx=canvas.getContext('2d');
+
+function getP(){
+  return{PMAX:1050,PMIN:+gv('pTop'),TMIN:+gv('tMin'),TMAX:+gv('tMax')};
+}
+function getM(){
+  const W=canvas.width,H=canvas.height;
+  const type=gv('chartType');
+  const barbW=type==='hodograph'?0:Math.round(W*0.10);
+  const pad={t:24,b:40,l:54,r:0};
+  return{W,H,barbW,pad,pw:W-barbW-pad.l,ph:H-pad.t-pad.b};
+}
+function pToY(p){
+  const{PMAX,PMIN}=getP();const{pad,ph}=getM();
+  return pad.t+ph*(Math.log(PMAX)-Math.log(p))/(Math.log(PMAX)-Math.log(PMIN));
+}
+function tToX(T,p){
+  const type=gv('chartType');
+  const{TMIN,TMAX,PMAX}=getP();const{pad,pw}=getM();
+  const sk=(type==='skewt'||type==='tephigram')?+gv('skew'):0;
+  return pad.l+pw*((T-TMIN)/(TMAX-TMIN)+sk*Math.log10(PMAX/p)/(TMAX-TMIN));
+}
+
+function getFD(){
+  const af=+gv('altFrom')*1000,at=+gv('altTo')*1000;
+  const lf=gv('lvlFilter');
+  const man=[1000,925,850,700,600,500,400,300,250,200,150,100];
+  return DATA.filter(d=>{
+    if(d.alt<af||d.alt>at)return false;
+    if(lf==='man')return man.some(p=>Math.abs(d.pressure-p)<20);
+    return true;
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   LOAD LATEST SONDE
+═══════════════════════════════════════════════ */
+async function loadLatestSonde(){
+  setStatus('Fetching latest sonde…','running');
+
+  try{
+    const res = await fetch('https://sonde.kushal-kc.com.np/api/sondes/');
+    if(!res.ok) throw new Error(res.status+' '+res.statusText);
+
+    const json = await res.json();
+
+    if(!json.data || !json.data.length){
+      throw new Error('No sonde data available');
+    }
+
+    sondeId = json.sonde_id || 'LATEST';
+
+    gi('sondeId').value = sondeId;
+
+    DATA = processRaw(
+      json.data.map(d => ({
+        alt: d.alt,
+        temp: d.temp,
+        humidity: d.humidity,
+        vel_h: d.vel_h,
+        heading: d.heading,
+
+        /* API pressure may be -1 */
+        pressure_estimated:
+          d.pressure && d.pressure > 0
+            ? d.pressure
+            : undefined
+      }))
+    );
+
+    serverIndices = null;
+
+    fillStrip();
+    fillIndicesFromData();
+    draw();
+
+    pushRecent(sondeId);
+
+    setStatus(
+      'Latest sonde loaded — '+sondeId+
+      ' ('+DATA.length+' levels)',
+      'ok'
+    );
+
+    toast('Latest sonde loaded');
+
+  }catch(e){
+
+    console.error(e);
+
+    setStatus(
+      'Failed loading latest sonde — loading demo',
+      'err'
+    );
+
+    toast('Using demo data');
+
+    loadDemo();
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   DRAW GRID
+═══════════════════════════════════════════════ */
+function drawGrid(){
+  const{PMAX,PMIN,TMIN,TMAX}=getP();
+  const{W,H,barbW,pad,pw,ph}=getM();
+  const isoOp=+gv('isoOp')/100,adOp=+gv('adOp')/100;
+  const iStep=+gv('isoStep'),adStep=+gv('adStep');
+  const showIso=gi('cIso').checked,showDry=gi('cDry').checked;
+  const showMoist=gi('cMoist').checked,showFreeze=gi('cFreeze').checked;
+  const showGrid=gi('cGrid').checked;
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+
+  /* clip */
+  ctx.save();
+  ctx.beginPath();ctx.rect(pad.l,pad.t,pw,ph);ctx.clip();
+
+  /* isotherms */
+  if(showIso){
+    for(let T=Math.floor(TMIN/iStep)*iStep;T<=TMAX+iStep;T+=iStep){
+      if(T===0&&showFreeze)continue;
+      ctx.beginPath();
+      ctx.strokeStyle=`rgba(0,0,0,${isoOp})`;ctx.lineWidth=.5;
+      for(let P=PMAX;P>=PMIN;P-=5){
+        const x=tToX(T,P),y=pToY(P);P===PMAX?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+  }
+
+  /* 0°C */
+  if(showFreeze){
+    ctx.save();
+    ctx.strokeStyle='rgba(0,0,0,.45)';ctx.lineWidth=1;ctx.setLineDash([5,4]);
+    ctx.beginPath();
+    for(let P=PMAX;P>=PMIN;P-=5){
+      const x=tToX(0,P),y=pToY(P);P===PMAX?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();ctx.setLineDash([]);ctx.restore();
+  }
+
+  /* dry adiabats */
+  if(showDry){
+    for(let th=-40;th<=150;th+=adStep){
+      ctx.beginPath();ctx.strokeStyle=`rgba(0,0,0,${adOp})`;ctx.lineWidth=.5;
+      let first=true;
+      for(let P=PMAX;P>=PMIN;P-=5){
+        const T2=(th+273.15)*Math.pow(P/1013.25,.286)-273.15;
+        const x=tToX(T2,P),y=pToY(P);first?ctx.moveTo(x,y):ctx.lineTo(x,y);first=false;
+      }
+      ctx.stroke();
+    }
+  }
+
+  /* moist adiabats */
+  if(showMoist){
+    for(let T0=-20;T0<=40;T0+=adStep){
+      ctx.save();
+      ctx.strokeStyle=`rgba(0,0,0,${adOp*.7})`;ctx.lineWidth=.5;ctx.setLineDash([3,3]);
+      let T=T0,first=true;
+      for(let P=PMAX;P>=PMIN;P-=5){
+        const Tk=T+273.15,es=6.112*Math.exp(17.67*T/(T+243.5)),ws=.622*es/(P-es);
+        T-=(287*Tk/P)*(287*Tk+2.5e6*ws)/(1004+2.5e6*2.5e6*ws*.622/(287*Tk*Tk))/1004*5;
+        const x=tToX(T,P),y=pToY(P);first?ctx.moveTo(x,y):ctx.lineTo(x,y);first=false;
+      }
+      ctx.stroke();ctx.restore();
+    }
+  }
+
+  ctx.restore();/* end clip */
+
+  /* pressure labels + grid lines */
+  const pLvls=[1000,925,850,700,600,500,400,300,250,200,150,100];
+  ctx.font='11px Courier New';ctx.fillStyle='#777';ctx.textAlign='right';
+  pLvls.forEach(P=>{
+    if(P>PMIN&&P<PMAX+10){
+      const y=pToY(P);
+      ctx.fillText(P,pad.l-4,y+4);
+      if(showGrid){
+        ctx.beginPath();ctx.strokeStyle='rgba(0,0,0,.05)';ctx.lineWidth=.5;
+        ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+pw,y);ctx.stroke();
+      }
+      ctx.beginPath();ctx.strokeStyle='#bbb';ctx.lineWidth=.7;
+      ctx.moveTo(pad.l-3,y);ctx.lineTo(pad.l,y);ctx.stroke();
+    }
+  });
+
+  /* temp axis labels */
+  ctx.textAlign='center';
+  for(let T=Math.floor(TMIN/10)*10;T<=TMAX;T+=10){
+    const x=tToX(T,PMAX);
+    if(x>=pad.l&&x<=pad.l+pw){
+      ctx.fillStyle=T===0?'#000':'#999';
+      ctx.font=T===0?'bold 11px Courier New':'11px Courier New';
+      ctx.fillText(T+'°',x,H-pad.b+14);
+    }
+  }
+
+  /* border */
+  ctx.beginPath();ctx.strokeStyle='#000';ctx.lineWidth=1.5;
+  ctx.rect(pad.l,pad.t,pw,ph);ctx.stroke();
+
+  /* axis titles */
+  ctx.fillStyle='#777';ctx.font='10px Courier New';ctx.textAlign='center';
+  ctx.fillText('Temperature (°C)',pad.l+pw/2,H-3);
+  ctx.save();ctx.translate(11,pad.t+ph/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText('Pressure (hPa)',0,0);ctx.restore();
+}
+
+/* ═══════════════════════════════════════════════
+   CAPE/CIN SHADING
+═══════════════════════════════════════════════ */
+function drawCAPEShading(fd){
+  if(!gi('cCAPE').checked||fd.length<2)return;
+  const{pad,pw,ph}=getM();
+  ctx.save();ctx.beginPath();ctx.rect(pad.l,pad.t,pw,ph);ctx.clip();
+  ctx.fillStyle='rgba(0,0,0,.06)';
+  ctx.beginPath();
+  fd.forEach((d,i)=>{const x=tToX(d.temp,d.pressure),y=pToY(d.pressure);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  const dd=fd[0].temp-fd[0].dewpoint;
+  fd.slice().reverse().forEach(d=>{
+    const parT=fd[0].temp-dd*0.42;
+    const boost=Math.max(0,parT-d.temp)*0.28;
+    const x=tToX(d.temp+boost,d.pressure),y=pToY(d.pressure);ctx.lineTo(x,y);
+  });
+  ctx.closePath();ctx.fill();ctx.restore();
+}
+
+/* ═══════════════════════════════════════════════
+   LCL LINE
+═══════════════════════════════════════════════ */
+function drawLCLLine(fd){
+  if(!gi('cLCL').checked||!fd.length)return;
+  const sfc=fd[0];
+  const p=lclP(sfc.temp,sfc.dewpoint,sfc.pressure);
+  const{PMIN}=getP();if(p<PMIN)return;
+  const y=pToY(p);
+  const{pad,pw}=getM();
+  ctx.save();
+  ctx.strokeStyle='rgba(0,0,0,.4)';ctx.lineWidth=.8;ctx.setLineDash([2,5]);
+  ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+pw,y);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#000';ctx.font='9px Courier New';ctx.textAlign='left';
+  ctx.fillText('LCL '+(p.toFixed(0)+' hPa'),pad.l+3,y-3);
+  ctx.restore();
+}
+
+/* ═══════════════════════════════════════════════
+   SOUNDING LINES
+═══════════════════════════════════════════════ */
+function drawSounding(fd){
+  if(!fd.length)return;
+  const lw=+gv('lwT');
+  const{pad,pw,ph}=getM();
+  ctx.save();ctx.beginPath();ctx.rect(pad.l,pad.t,pw,ph);ctx.clip();
+
+  /* temp — solid */
+  ctx.beginPath();ctx.strokeStyle='#000';ctx.lineWidth=lw;ctx.setLineDash([]);
+  fd.forEach((d,i)=>{const x=tToX(d.temp,d.pressure),y=pToY(d.pressure);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+
+  /* dewpoint — dashed */
+  ctx.beginPath();ctx.strokeStyle='#000';ctx.lineWidth=lw;ctx.setLineDash([5,4]);
+  fd.forEach((d,i)=>{const x=tToX(d.dewpoint,d.pressure),y=pToY(d.pressure);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();ctx.setLineDash([]);
+
+  /* dots every ~nth level */
+  const step=Math.max(1,Math.floor(fd.length/25));
+  fd.forEach((d,i)=>{
+    if(i%step!==0)return;
+    ctx.beginPath();ctx.arc(tToX(d.temp,d.pressure),pToY(d.pressure),2.2,0,Math.PI*2);
+    ctx.fillStyle='#000';ctx.fill();
+    ctx.beginPath();ctx.arc(tToX(d.dewpoint,d.pressure),pToY(d.pressure),2.2,0,Math.PI*2);
+    ctx.strokeStyle='#000';ctx.lineWidth=1;ctx.stroke();
+  });
+
+  ctx.restore();
+}
+
+/* ═══════════════════════════════════════════════
+   WIND BARB PANEL
+═══════════════════════════════════════════════ */
+function drawWindPanel(fd){
+  const{W,H,barbW,pad}=getM();
+  if(barbW===0)return;
+  const cx=W-barbW/2;
+
+  ctx.fillStyle='#f6f6f6';ctx.fillRect(W-barbW,0,barbW,H);
+  ctx.beginPath();ctx.strokeStyle='#000';ctx.lineWidth=1.5;
+  ctx.moveTo(W-barbW,0);ctx.lineTo(W-barbW,H);ctx.stroke();
+  ctx.fillStyle='#aaa';ctx.font='9px Courier New';ctx.textAlign='center';
+  ctx.fillText('WIND',cx,13);
+  ctx.beginPath();ctx.strokeStyle='rgba(0,0,0,.08)';ctx.lineWidth=.5;
+  ctx.moveTo(cx,pad.t);ctx.lineTo(cx,H-pad.b);ctx.stroke();
+
+  if(!gi('cBarbs').checked||!fd.length)return;
+
+  const maxN=+gv('barbN');
+  const step=Math.max(1,Math.floor(fd.length/maxN));
+  for(let i=0;i<fd.length;i+=step){
+    const d=fd[i];
+    if(d.vel_h==null||d.heading==null)continue;
+    const y=pToY(d.pressure);
+    const th=d.heading*Math.PI/180;
+    drawBarb(cx,y,-d.vel_h*Math.sin(th),-d.vel_h*Math.cos(th));
+  }
+}
+
+function drawBarb(x,y,u,v){
+  const spd=Math.sqrt(u*u+v*v);if(spd<.5)return;
+  const len=21,ang=Math.atan2(-u,-v);
+  const ex=x+Math.cos(ang)*len,ey=y+Math.sin(ang)*len;
+  ctx.save();
+  ctx.strokeStyle='#000';ctx.fillStyle='#000';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(ex,ey);ctx.stroke();
+  let rem=Math.round(spd),bx=ex,by=ey;
+  const dx=Math.cos(ang+Math.PI),dy=Math.sin(ang+Math.PI);
+  const lx=Math.cos(ang+Math.PI*.57)*7,ly=Math.sin(ang+Math.PI*.57)*7;
+  while(rem>=50){
+    ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx+lx*1.4,by+ly*1.4);
+    ctx.lineTo(bx+dx*4+lx*1.4,by+dy*4+ly*1.4);ctx.closePath();ctx.fill();
+    bx+=dx*4;by+=dy*4;rem-=50;
+  }
+  while(rem>=10){ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx+lx,by+ly);ctx.stroke();bx+=dx*3;by+=dy*3;rem-=10;}
+  if(rem>=5){ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(bx+lx*.5,by+ly*.5);ctx.stroke();}
+  ctx.restore();
+}
+
+/* ═══════════════════════════════════════════════
+   LEGEND
+═══════════════════════════════════════════════ */
+function drawLegend(){
+  if(!gi('cLegend').checked)return;
+  const{pad,pw}=getM();
+  const lx=pad.l+pw-138,ly=pad.t+8;
+  ctx.fillStyle='rgba(255,255,255,.93)';ctx.fillRect(lx-3,ly-3,134,56);
+  ctx.strokeStyle='#ddd';ctx.lineWidth=.5;ctx.strokeRect(lx-3,ly-3,134,56);
+  ctx.font='10px Courier New';ctx.textAlign='left';ctx.fillStyle='#000';
+  /* temp */
+  ctx.beginPath();ctx.strokeStyle='#000';ctx.lineWidth=2;ctx.setLineDash([]);
+  ctx.moveTo(lx+2,ly+11);ctx.lineTo(lx+24,ly+11);ctx.stroke();
+  ctx.fillText('Temperature',lx+28,ly+15);
+  /* dew */
+  ctx.beginPath();ctx.lineWidth=2;ctx.setLineDash([5,3]);
+  ctx.moveTo(lx+2,ly+29);ctx.lineTo(lx+24,ly+29);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillText('Dewpoint',lx+28,ly+33);
+  ctx.fillStyle='#aaa';ctx.font='9px Courier New';
+  ctx.fillText('● data level',lx+2,ly+47);
+}
+
+/* ═══════════════════════════════════════════════
+   HODOGRAPH
+═══════════════════════════════════════════════ */
+function drawHodograph(){
+  const fd=getFD().filter(d=>d.vel_h!=null&&d.heading!=null);
+  const{W,H}=getM();
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  if(!fd.length){
+    ctx.fillStyle='#ccc';ctx.font='13px Courier New';ctx.textAlign='center';
+    ctx.fillText('No wind data available',W/2,H/2);return;
+  }
+  const PAD=44,cx=W/2,cy=H/2;
+  const maxR=Math.min(W,H)/2-PAD;
+  const maxSpd=fd.reduce((m,d)=>Math.max(m,d.vel_h),0)||1;
+  const rStep=maxSpd>40?20:maxSpd>20?10:5;
+
+  /* rings */
+  for(let r=rStep;r<=maxSpd+rStep;r+=rStep){
+    const pr=r/maxSpd*maxR;
+    ctx.beginPath();ctx.arc(cx,cy,pr,0,Math.PI*2);
+    ctx.strokeStyle='rgba(0,0,0,.1)';ctx.lineWidth=.5;ctx.stroke();
+    ctx.fillStyle='#bbb';ctx.font='9px Courier New';ctx.textAlign='left';
+    ctx.fillText(r,cx+pr+2,cy-2);
+  }
+
+  /* compass axes */
+  ctx.strokeStyle='rgba(0,0,0,.12)';ctx.lineWidth=.5;
+  [[cx,PAD,cx,H-PAD],[PAD,cy,W-PAD,cy]].forEach(([x1,y1,x2,y2])=>{
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  });
+  ctx.fillStyle='#bbb';ctx.font='10px Courier New';ctx.textAlign='center';
+  ctx.fillText('N',cx,PAD-2);ctx.fillText('S',cx,H-PAD+12);
+  ctx.textAlign='left';ctx.fillText('E',W-PAD+2,cy+4);
+  ctx.textAlign='right';ctx.fillText('W',PAD-2,cy+4);
+
+  /* path */
+  ctx.beginPath();
+  fd.forEach((d,i)=>{
+    const th=d.heading*Math.PI/180;
+    const x=cx+(-d.vel_h*Math.sin(th))/maxSpd*maxR;
+    const y=cy-(-d.vel_h*Math.cos(th))/maxSpd*maxR;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle='#000';ctx.lineWidth=1.5;ctx.stroke();
+
+  /* dots coloured by altitude */
+  const altMax=fd[fd.length-1].alt||1;
+  fd.forEach((d,i)=>{
+    const th=d.heading*Math.PI/180;
+    const x=cx+(-d.vel_h*Math.sin(th))/maxSpd*maxR;
+    const y=cy-(-d.vel_h*Math.cos(th))/maxSpd*maxR;
+    const gr=Math.round(200-d.alt/altMax*190);
+    ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);
+    ctx.fillStyle=`rgb(${gr},${gr},${gr})`;ctx.fill();
+    ctx.strokeStyle='#000';ctx.lineWidth=.5;ctx.stroke();
+    if(i%5===0||d.alt%2000<300){
+      ctx.fillStyle='#000';ctx.font='9px Courier New';ctx.textAlign='left';
+      ctx.fillText((d.alt/1000).toFixed(1)+'km',x+6,y+3);
+    }
+  });
+
+  ctx.fillStyle='#000';ctx.font='bold 12px Courier New';ctx.textAlign='center';
+  ctx.fillText('Hodograph — '+(sondeId||'DEMO'),cx,18);
+  ctx.fillStyle='#aaa';ctx.font='10px Courier New';
+  ctx.fillText('rings: '+rStep+' m/s · colour = altitude',cx,H-6);
+}
+
+/* ═══════════════════════════════════════════════
+   MAIN DRAW
+═══════════════════════════════════════════════ */
+function draw(){
+  const type=gv('chartType');
+  const titles={skewt:'Skew-T / Log-P',emagram:'Emagram',stuve:'Stüve',tephigram:'Tephigram',hodograph:'Hodograph'};
+  sv('toolbarTitle',titles[type]||'Skew-T');
+
+  if(type==='hodograph'){drawHodograph();return;}
+
+  const fd=getFD();
+  drawGrid();
+  drawCAPEShading(fd);
+  drawLCLLine(fd);
+  drawSounding(fd);
+  drawWindPanel(fd);
+  drawLegend();
+
+  /* sonde ID watermark */
+  if(sondeId){
+    const{pad,pw,ph}=getM();
+    ctx.save();ctx.globalAlpha=.06;
+    ctx.font='bold 20px Courier New';ctx.fillStyle='#000';ctx.textAlign='center';
+    ctx.fillText(sondeId,pad.l+pw/2,pad.t+ph-10);ctx.restore();
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   RESIZE
+═══════════════════════════════════════════════ */
+function resize(){
+  const wrap=gi('canvas-wrap');
+  canvas.width=wrap.clientWidth;canvas.height=wrap.clientHeight;draw();
+}
+
+/* ═══════════════════════════════════════════════
+   LOAD SONDE
+═══════════════════════════════════════════════ */
+async function loadSonde(){
+  const id=gi('sondeId').value.trim();
+  if(!id){setStatus('Enter a sonde ID','err');return;}
+  const btn=gi('loadBtn');btn.disabled=true;btn.textContent='Loading…';
+  setStatus('Fetching '+id+'…','running');
+  try{
+    const res=await fetch('/data/atmosphere/?sonde_id='+encodeURIComponent(id));
+    if(!res.ok)throw new Error(res.status+' '+res.statusText);
+    const json=await res.json();
+    if(!json.data||!json.data.length)throw new Error('no data returned');
+    DATA=processRaw(json.data);
+    sondeId=id;
+    serverIndices=json.indices||null;
+    pushRecent(id);
+    fillStrip();
+    if(serverIndices)fillIndices(serverIndices);else fillIndicesFromData();
+    draw();
+    setStatus('Loaded '+id+' — '+DATA.length+' levels','ok');
+    toast('Loaded '+id);
+  }catch(e){
+    setStatus('Error: '+e.message,'err');toast('Failed to load');
+  }finally{btn.disabled=false;btn.textContent='▶ Load sounding';}
+}
+
+function loadDemo(){
+  DATA=processRaw(DEMO_RAW);sondeId='DEMO-001';
+  gi('sondeId').value='DEMO-001';
+  serverIndices=null;
+  fillStrip();fillIndicesFromData();draw();
+  setStatus('Demo sounding loaded — '+DATA.length+' levels','ok');
+  toast('Demo data loaded');
+}
+
+function clearChart(){
+  DATA=[];sondeId='';serverIndices=null;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+  const ids=['s-t','s-dp','s-p','s-alt','s-lvl','s-id',
+    'i-cape','i-cin','i-li','i-ki','i-si','i-tt','i-pw','i-lcl','i-trop',
+    'w-max','w-maxp','w-s01','w-s06'];
+  ids.forEach(id=>sv(id,'—'));
+  setStatus('Cleared','ok');
+}
+
+/* ═══════════════════════════════════════════════
+   RECENT IDS
+═══════════════════════════════════════════════ */
+function pushRecent(id){
+  recent=recent.filter(x=>x!==id);recent.unshift(id);recent=recent.slice(0,5);
+  localStorage.setItem('skewt_recent',JSON.stringify(recent));renderRecent();
+}
+function renderRecent(){
+  const el=gi('recentList');if(!recent.length){el.innerHTML='';return;}
+  el.innerHTML='<div style="font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Recent</div>'+
+    recent.map(id=>`<div onclick="gi('sondeId').value='${id}';loadSonde()"
+      style="font-size:11px;padding:3px 0;cursor:pointer;border-bottom:1px solid #eee">${id}</div>`).join('');
+}
+renderRecent();
+
+/* ═══════════════════════════════════════════════
+   CHART TYPE CHANGE
+═══════════════════════════════════════════════ */
+function onTypeChange(){
+  const isHodo=gv('chartType')==='hodograph';
+  gi('axesSection').style.display=isHodo?'none':'block';
+  gi('overlaysSection').style.display=isHodo?'none':'block';
+  gi('skew').disabled=!['skewt','tephigram'].includes(gv('chartType'));
+  draw();
+}
+
+/* ═══════════════════════════════════════════════
+   RESET / FULLSCREEN
+═══════════════════════════════════════════════ */
+function resetView(){
+  gi('skew').value=45;sv('skewLbl','45°');
+  gi('pTop').value=100;gi('tMin').value=-40;gi('tMax').value=60;
+  gi('chartType').value='skewt';gi('isoStep').value=10;gi('adStep').value=10;
+  gi('lwT').value=2;gi('isoOp').value=35;sv('isoOpLbl','35%');
+  gi('adOp').value=30;sv('adOpLbl','30%');gi('barbN').value=20;
+  gi('altFrom').value=0;gi('altTo').value=35;gi('lvlFilter').value='all';
+  onTypeChange();toast('View reset');
+}
+
+function toggleFS(){
+  if(!document.fullscreenElement)gi('chart-area').requestFullscreen();
+  else document.exitFullscreen();
+}
+
+/* ═══════════════════════════════════════════════
+   EXPORT
+═══════════════════════════════════════════════ */
+function exportPNG(){
+  const a=document.createElement('a');
+  a.download='skewt_'+(sondeId||'sonde')+'.png';
+  a.href=canvas.toDataURL('image/png');a.click();toast('PNG saved');
+}
+function exportCSV(){
+  const fd=getFD();
+  const rows=['pressure_hPa,alt_m,temp_C,dewpoint_C,humidity_pct,pot_temp_C,eq_pot_temp_C,wind_speed_ms,heading_deg,wind_u_ms,wind_v_ms'];
+  fd.forEach(d=>{
+    const th=d.heading!=null?d.heading*Math.PI/180:null;
+    const u=th!=null?(-d.vel_h*Math.sin(th)).toFixed(3):'';
+    const v=th!=null?(-d.vel_h*Math.cos(th)).toFixed(3):'';
+    rows.push([d.pressure.toFixed(1),d.alt,d.temp,d.dewpoint.toFixed(1),
+      d.humidity,potT(d.temp,d.pressure).toFixed(1),
+      eqPotT(d.temp,d.dewpoint,d.pressure).toFixed(1),
+      d.vel_h??'',d.heading??'',u,v].join(','));
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));
+  a.download='skewt_'+(sondeId||'sonde')+'.csv';a.click();toast('CSV saved');
+}
+function exportJSON(){
+  const payload={sonde_id:sondeId,levels:getFD().length,indices:serverIndices,data:getFD()};
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
+  a.download='skewt_'+(sondeId||'sonde')+'.json';a.click();toast('JSON saved');
+}
+function printChart(){
+  const w=window.open('');
+  w.document.write('<html><body style="margin:0"><img src="'+canvas.toDataURL()+'" style="width:100%"></body></html>');
+  w.document.close();w.print();
+}
+
+/* ═══════════════════════════════════════════════
+   HOVER TOOLTIP
+═══════════════════════════════════════════════ */
+const wrap=gi('canvas-wrap');
+wrap.addEventListener('mousemove',function(e){
+  const type=gv('chartType');
+  const rect=canvas.getBoundingClientRect();
+  const sx=canvas.width/rect.width,sy=canvas.height/rect.height;
+  const mx=(e.clientX-rect.left)*sx,my=(e.clientY-rect.top)*sy;
+  const{PMAX,PMIN}=getP();const{pad,ph,pw,W,barbW}=getM();
+
+  /* crosshair */
+  if(gi('cCross').checked&&type!=='hodograph'){
+    const chH=gi('chH'),chV=gi('chV');
+    chH.style.display='block';chH.style.top=(e.clientY-rect.top)+'px';
+    chV.style.display='block';chV.style.left=(e.clientX-rect.left)+'px';
+  }
+
+  if(type==='hodograph'||mx<pad.l||mx>W-barbW||my<pad.t||my>pad.t+ph){
+    gi('tooltip').style.display='none';sv('cursorInfo','hover chart');return;
+  }
+
+  const P=Math.exp(Math.log(PMAX)-(my-pad.t)*(Math.log(PMAX)-Math.log(PMIN))/ph);
+  const fd=getFD();
+  let best=null,bd=Infinity;
+  fd.forEach(d=>{const dd=Math.abs(d.pressure-P);if(dd<bd){bd=dd;best=d;}});
+  if(!best)return;
+
+  sv('cursorInfo','P: '+best.pressure.toFixed(0)+' hPa | T: '+best.temp+'°C | Td: '+best.dewpoint.toFixed(1)+'°C | '+best.alt+'m');
+  sv('tt-p',best.pressure.toFixed(1)+' hPa');
+  sv('tt-a',(best.alt/1000).toFixed(2)+' km');
+  sv('tt-t',best.temp+'°C');
+  sv('tt-d',best.dewpoint.toFixed(1)+'°C');
+  sv('tt-r',best.humidity+'%');
+  sv('tt-w',best.vel_h!=null?best.vel_h.toFixed(1)+' m/s @ '+best.heading+'°':'—');
+  sv('tt-th',potT(best.temp,best.pressure).toFixed(1)+'°C');
+  sv('tt-the',eqPotT(best.temp,best.dewpoint,best.pressure).toFixed(1)+'°C');
+
+  const tip=gi('tooltip');
+  let tx=e.clientX-rect.left+14,ty=e.clientY-rect.top-110;
+  if(tx+162>rect.width)tx=e.clientX-rect.left-170;
+  ty=Math.max(4,Math.min(ty,rect.height-175));
+  tip.style.left=tx+'px';tip.style.top=ty+'px';tip.style.display='block';
+});
+wrap.addEventListener('mouseleave',()=>{
+  gi('tooltip').style.display='none';
+  gi('chH').style.display='none';gi('chV').style.display='none';
+  sv('cursorInfo','hover chart');
+});
+
+/* ═══════════════════════════════════════════════
+   KEYBOARD SHORTCUTS
+═══════════════════════════════════════════════ */
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  const k=e.key.toLowerCase();
+  if(k==='l')gi('sondeId').focus();
+  if(k==='d')loadDemo();
+  if(k==='r')resetView();
+  if(k==='h'){gi('chartType').value='hodograph';onTypeChange();}
+  if(k==='s'){gi('chartType').value='skewt';onTypeChange();}
+  if(k==='e'){gi('chartType').value='emagram';onTypeChange();}
+  if(k==='escape')gi('tooltip').style.display='none';
+});
+gi('sondeId').addEventListener('keydown',e=>{if(e.key==='Enter')loadSonde();});
+
+/* ═══════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════ */
+window.addEventListener('resize',resize);
+
+/* prefill from URL param */
+const urlP=new URLSearchParams(window.location.search);
+const pid=urlP.get('sonde_id');
+if(pid){gi('sondeId').value=pid;setTimeout(loadSonde,100);}
+
+resize();
+loadLatestSonde();
+</script>
+</body>
+</html>

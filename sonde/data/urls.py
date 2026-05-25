@@ -8,5 +8,6 @@ urlpatterns = [
     path('sonde_KML/', views.sonde_KML),
     path('skewt/', views.skewt),
 path('hodograph/', views.hodograph),
+    path('atmosphere/', views.sonde_atmosphere_json),
 ]
     

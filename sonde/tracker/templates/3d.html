@@ -25,6 +25,7 @@
         overflow: hidden;
     }
 
+    /* NAVBAR */
     #nav {
         border-bottom: 1px solid #000;
         padding: 10px 0;
@@ -66,6 +67,7 @@
         text-decoration: underline;
     }
 
+    /* TOOLBAR INSIDE VIEWER BOX */
     #toolbar-strip {
         border-bottom: 1px solid #000;
         padding: 8px 10px;
@@ -144,7 +146,7 @@
         color: #fff;
     }
 
-
+    /* PAGE BODY AREA */
     #page-body {
         flex: 1;
         min-height: 0;
@@ -155,6 +157,7 @@
         padding: 20px 10px;
     }
 
+    /* CENTERED BOX */
     #viewer-box {
         max-width: 900px;
         width: 100%;
@@ -165,14 +168,14 @@
         position: relative;
     }
 
-
+    /* MAP */
     #cesiumContainer {
         flex: 1;
         min-height: 0;
         width: 100%;
     }
 
-
+    /* INFO PANEL */
     #info-panel {
         position: absolute;
         bottom: 10px;
@@ -223,26 +226,30 @@
 </head>
 <body>
 
+<!-- NAVBAR -->
 <div id="nav">
     <nav class="navbar">
         <a class="logo" href="/">Sonde</a>
         <div class="links">
-            <a href="/history">History</a>
-            <a href="/api-doc">API</a>
-            <a href="/3d">KML</a>
-            <a href="/accounts/dash">Dashboard</a>
-            <a href="/burst">Burst</a>
-            <a href="/predict">Predict</a>
-            <a href="/report/submit">Report </a>
-            <a href="/faq">About</a>
-            <a href="https://github.com">GitHub</a>
+       <a href="/history">Historical</a>
+      <a href="/3d" class="active">KML</a>
+      <a href="/skewt">Skew-T</a>
+      <a href="/burst">Burst</a>
+      <a href="/predict">Predict</a>
+      <a href="/chase" >Chase</a>
+      <a href="/report/submit">Report</a>
+      <a href="/accounts/dash">Dashboard</a>
+      <a href="/api-doc">API</a>
+      <a href="/faq">About</a>
+       <a href="https://github.com/sakul7-stack/sonde">GitHub</a>
         </div>
     </nav>
 </div>
 
+<!-- PAGE BODY -->
 <div id="page-body">
     <div id="viewer-box">
-    
+        <!-- TOOLBAR INSIDE BOX -->
         <div id="toolbar-strip">
             <span class="toolbar-label">KML Viewer</span>
 
@@ -290,6 +297,7 @@ const viewer = new Cesium.Viewer('cesiumContainer', {
     geocoder: false,
 });
 
+// Start over Nepal
 viewer.camera.flyTo({
     destination: Cesium.Cartesian3.fromDegrees(85.3240, 27.7172, 1500000)
 });
@@ -352,6 +360,7 @@ fileInput.addEventListener('change', async function(event) {
         fileNameEl.textContent = 'No file loaded';
     }
 
+    // Reset input so same file can be reloaded
     fileInput.value = '';
 });
 

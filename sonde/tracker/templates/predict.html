@@ -11,13 +11,19 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,sans-serif;background:#fff;color:#000;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* NAV */
 #nav{border-bottom:1px solid #000;padding:10px 0;flex-shrink:0;background:#fff;z-index:10}
 .navbar{max-width:1100px;margin:auto;display:flex;justify-content:space-between;align-items:center;padding:0 10px}
 .logo{font-weight:bold;font-size:18px;cursor:pointer;text-decoration:none;color:#000}
 .links a{text-decoration:none;color:#000;margin-left:15px;font-size:14px}
 .links a:hover{text-decoration:underline}
 .links a.active{font-weight:bold;text-decoration:underline}
+
+/* LAYOUT */
 #page-body{flex:1;min-height:0;display:flex;overflow:hidden}
+
+/* SIDEBAR */
 #sidebar{width:310px;flex-shrink:0;border-right:1px solid #000;display:flex;flex-direction:column;overflow-y:auto;background:#fff}
 .sidebar-header{border-bottom:1px solid #000;padding:10px 12px;font-size:13px;font-weight:bold;background:#000;color:#fff;flex-shrink:0}
 .section{border-bottom:1px solid #000;padding:12px}
@@ -36,33 +42,48 @@ select option{background:#fff;color:#000}
 .btn-row .btn{margin-top:0}
 .btn-sm{border:1px solid #000;background:#fff;color:#000;padding:4px 8px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif}
 .btn-sm:hover{background:#000;color:#fff}
+
+/* STATS STRIP */
 #stats-strip{border-bottom:1px solid #000;display:grid;grid-template-columns:repeat(4,1fr);flex-shrink:0;background:#fff}
 .stat-cell{padding:8px 10px;border-right:1px solid #000}
 .stat-cell:last-child{border-right:none}
 .stat-label{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.06em}
 .stat-val{font-size:15px;font-weight:bold;margin-top:2px;font-variant-numeric:tabular-nums}
+
+/* MAP AREA */
 #map-area{flex:1;display:flex;flex-direction:column;min-width:0}
 #toolbar-strip{border-bottom:1px solid #000;padding:7px 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;flex-shrink:0}
 .toolbar-label{font-size:13px;font-weight:bold}
 #map{flex:1;min-height:0;width:100%}
+
+/* STATUS */
 #status-bar{border-top:1px solid #000;padding:5px 10px;font-size:11px;color:#555;background:#fff;flex-shrink:0;display:flex;align-items:center;gap:10px}
 #status-dot{width:7px;height:7px;border-radius:50%;background:#555;flex-shrink:0}
 #status-dot.running{background:#000;animation:pulse .8s infinite alternate}
 #status-dot.ok{background:#000}
 #status-dot.err{background:#000}
 @keyframes pulse{from{opacity:.3}to{opacity:1}}
+
+/* SAVED LOCATIONS */
 .saved-item{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #eee;font-size:12px;cursor:pointer}
 .saved-item:hover{background:#f5f5f5;margin:0 -12px;padding:5px 12px}
 .saved-item-name{font-weight:bold}
 .saved-item-coords{color:#555;font-size:11px}
 .no-saved{font-size:12px;color:#aaa;text-align:center;padding:10px 0}
+
+/* WAYPOINT TABLE */
 #wpt-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
 #wpt-table th{text-align:left;color:#555;border-bottom:1px solid #000;padding:3px 4px;font-weight:normal;font-size:10px;text-transform:uppercase}
 #wpt-table td{padding:3px 4px;border-bottom:1px solid #eee}
 .wpt-scroll{max-height:160px;overflow-y:auto;border:1px solid #000;margin-top:6px}
+
+/* MODEL BADGE */
 .model-badge{border:1px solid #000;font-size:10px;padding:2px 6px;display:inline-block}
+
+/* FOOTER */
 footer{border-top:1px solid #000;text-align:center;padding:6px 15px;font-size:11px;flex-shrink:0;background:#fff}
 
+/* ───────────────── MOBILE / NARROW SCREEN ───────────────── */
 @media (max-width: 900px){
 
   body{
@@ -108,6 +129,7 @@ footer{border-top:1px solid #000;text-align:center;padding:6px 15px;font-size:11
     border-bottom:1px solid #000;
   }
 
+  /* NAV */
   .navbar{
     flex-direction:column;
     align-items:flex-start;
@@ -125,6 +147,7 @@ footer{border-top:1px solid #000;text-align:center;padding:6px 15px;font-size:11
     font-size:12px;
   }
 
+  /* TOOLBAR */
   #toolbar-strip{
     gap:6px;
     padding:6px;
@@ -138,10 +161,13 @@ footer{border-top:1px solid #000;text-align:center;padding:6px 15px;font-size:11
   .toolbar-label{
     width:100%;
   }
+
+  /* FORM GRID */
   .row2{
     grid-template-columns:1fr;
   }
 
+  /* BUTTONS */
   .btn-row{
     flex-direction:column;
   }
@@ -151,16 +177,20 @@ footer{border-top:1px solid #000;text-align:center;padding:6px 15px;font-size:11
     width:100%;
   }
 
+  /* WAYPOINT TABLE */
   .wpt-scroll{
     max-height:220px;
   }
 
+  /* FOOTER */
   footer{
     font-size:10px;
     padding:8px;
   }
 }
 
+
+/* EXTRA SMALL PHONES */
 @media (max-width: 500px){
 
   #map-area{
@@ -203,6 +233,7 @@ footer{border-top:1px solid #000;text-align:center;padding:6px 15px;font-size:11
   }
 }
 
+/* Leaflet overrides */
 .leaflet-control-zoom a{border-radius:0!important;border:1px solid #000!important}
 .leaflet-popup-content-wrapper{border-radius:0;border:1px solid #000}
 .leaflet-popup-tip{display:none}
@@ -214,15 +245,17 @@ footer{border-top:1px solid #000;text-align:center;padding:6px 15px;font-size:11
   <nav class="navbar">
     <a class="logo" href="/">Sonde</a>
     <div class="links">
-       <a href="/history">History</a>
-            <a href="/api-doc">API</a>
-            <a href="/3d">KML</a>
-            <a href="/accounts/dash">Dashboard</a>
-<a href="/burst">Burst</a>
-            <a href="/predict">Predict</a>
-            <a href="/report/submit">Report</a>
-            <a href="/faq">About</a>
-            <a href="https://github.com">GitHub</a>
+             <a href="/history">Historical</a>
+      <a href="/3d">KML</a>
+      <a href="/skewt">Skew-T</a>
+      <a href="/burst">Burst</a>
+      <a href="/predict" class="active">Predict</a>
+      <a href="/chase" >Chase</a>
+      <a href="/report/submit">Report</a>
+      <a href="/accounts/dash">Dashboard</a>
+      <a href="/api-doc">API</a>
+      <a href="/faq">About</a>
+       <a href="https://github.com/sakul7-stack/sonde">GitHub</a>
     </div>
   </nav>
 </div>
@@ -581,6 +614,7 @@ burstAlt = 0;
     landPt = pt;
   });
 
+  // ✅ BURST = end of ascent stage
   if(idx === 0 && stage.trajectory && stage.trajectory.length > 0){
     const last = stage.trajectory[stage.trajectory.length - 1];
     burstLatLng = [last.latitude, last.longitude];
@@ -670,6 +704,7 @@ burstAlt = 0;
   setStatus('Cleared');
 }
 
+/* ─── SAVED LOCATIONS ─── */
 function renderSaved(){
   const el=document.getElementById('saved-list');
   if(!savedLocations.length){el.innerHTML='<p class="no-saved">No saved locations</p>';return;}
