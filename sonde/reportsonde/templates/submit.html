@@ -1,0 +1,428 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="{% static 'tracker/ballon.png' %}" type="image/png">
+<link rel="stylesheet" href="{% static 'global/base.css' %}">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<title>Report Sighting - Sonde</title>
+
+<style>
+.container {
+    max-width: 560px;
+    margin: 30px auto;
+    padding: 0 16px;
+}
+
+.page-header {
+    margin-bottom: 24px;
+}
+
+.page-header h1 {
+    font-size: 22px;
+    margin-bottom: 6px;
+}
+
+.page-header p {
+    font-size: 13px;
+    color: #555;
+    line-height: 1.5;
+}
+
+.info-box {
+    border: 1px solid #000;
+    padding: 14px 16px;
+    margin-bottom: 24px;
+    background: #fafafa;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.info-box strong {
+    font-size: 14px;
+}
+
+.info-box ul {
+    margin: 8px 0 0 18px;
+    padding: 0;
+}
+
+.info-box li {
+    margin-bottom: 4px;
+}
+
+.form-card {
+    border: 1px solid #000;
+    padding: 24px;
+}
+
+.form-card h2 {
+    font-size: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+.form-section {
+    margin-bottom: 20px;
+}
+
+.form-section h3 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #555;
+    margin-bottom: 12px;
+}
+
+.field {
+    margin-bottom: 14px;
+}
+
+.field label {
+    display: block;
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.field label .required {
+    color: #c00;
+}
+
+.field .help-text {
+    font-size: 11px;
+    color: #777;
+    margin-top: 3px;
+}
+
+.field input,
+.field textarea,
+.field select {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid #000;
+    background: #fff;
+    color: #000;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+}
+
+.field input:focus,
+.field textarea:focus {
+    outline: 2px solid #000;
+    outline-offset: 1px;
+}
+
+.field textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.field-row {
+    display: flex;
+    gap: 12px;
+}
+
+.field-row .field {
+    flex: 1;
+}
+
+.photo-upload {
+    border: 2px dashed #ccc;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.photo-upload:hover {
+    border-color: #000;
+}
+
+.photo-upload input {
+    display: none;
+}
+
+.photo-upload .icon {
+    font-size: 28px;
+    margin-bottom: 6px;
+}
+
+.photo-upload .label {
+    font-size: 13px;
+    color: #555;
+}
+
+.photo-upload .label strong {
+    color: #000;
+    text-decoration: underline;
+}
+
+.photo-upload .hint {
+    font-size: 11px;
+    color: #999;
+    margin-top: 4px;
+}
+
+#photo-preview {
+    display: none;
+    margin-top: 10px;
+    text-align: center;
+}
+
+#photo-preview img {
+    max-width: 100%;
+    max-height: 200px;
+    border: 1px solid #ccc;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid #000;
+    background: #000;
+    color: #fff;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    margin-top: 8px;
+}
+
+.submit-btn:hover {
+    background: #333;
+}
+
+.success-msg {
+    border: 1px solid #000;
+    background: #000;
+    color: #fff;
+    padding: 16px;
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.success-msg a {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.errorlist {
+    list-style: none;
+    padding: 0;
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: #c00;
+}
+
+.note-example {
+    font-size: 11px;
+    color: #777;
+    margin-top: 4px;
+}
+
+.note-example em {
+    color: #555;
+}
+
+#pick-map {
+    width: 100%;
+    height: 220px;
+    border: 1px solid #000;
+    margin-bottom: 8px;
+    cursor: crosshair;
+}
+
+.pick-coords {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-size: 12px;
+    color: #555;
+}
+
+.pick-coords span {
+    font-family: 'Courier New', monospace;
+    color: #000;
+    font-weight: bold;
+}
+
+.pick-hint {
+    font-size: 11px;
+    color: #999;
+    margin-top: 2px;
+}
+</style>
+</head>
+
+<body>
+
+{% include "navbar.html" with active="report" %}
+
+<div class="container">
+
+    <div class="page-header">
+        <h1>Report a Sighting</h1>
+        <p>Help the sonde community by reporting where you found or spotted a radiosonde. Your reports help us recover more sondes and improve our data.</p>
+    </div>
+
+    <div class="info-box">
+        <strong>What to report</strong>
+        <ul>
+            <li>Found a weather balloon or radiosonde on the ground</li>
+            <li>Saw one landing or hanging from a tree/power line</li>
+            <li>Have the physical device and want to return it</li>
+        </ul>
+        <strong style="margin-top:10px;display:block;">Safety notice</strong>
+        <ul>
+            <li>Do NOT open or disassemble the device</li>
+            <li>Do NOT attempt to retrieve from power lines</li>
+            <li>Handle with clean gloves if possible</li>
+        </ul>
+    </div>
+
+    {% if success %}
+    <div class="success-msg">
+        Report submitted successfully. Thank you for helping!<br>
+        <a href="/">Return to home</a>
+    </div>
+    {% else %}
+
+    <div class="form-card">
+        <h2>Submit Your Report</h2>
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="form-section">
+                <h3>Contact Info</h3>
+
+                <div class="field-row">
+                    <div class="field">
+                        <label>Email <span class="required">*</span></label>
+                        {{ form.email }}
+                        {% if form.email.errors %}<ul class="errorlist">{% for e in form.email.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label>Phone</label>
+                        {{ form.phone }}
+                        {% if form.phone.errors %}<ul class="errorlist">{% for e in form.phone.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Location</h3>
+
+                <div id="pick-map"></div>
+                <div class="pick-coords">
+                    <span id="pick-display">Click the map to set location</span>
+                </div>
+                <div class="pick-hint">Drag marker to adjust. Coordinates auto-fill the fields below.</div>
+
+                <div class="field-row" style="margin-top:10px;">
+                    <div class="field">
+                        <label>Latitude <span class="required">*</span></label>
+                        {{ form.lat }}
+                        {% if form.lat.errors %}<ul class="errorlist">{% for e in form.lat.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    <div class="field">
+                        <label>Longitude <span class="required">*</span></label>
+                        {{ form.lon }}
+                        {% if form.lon.errors %}<ul class="errorlist">{% for e in form.lon.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Photo</h3>
+
+                <div class="field">
+                    <div class="photo-upload" onclick="document.getElementById('photo-input').click()">
+                        <div class="icon">+</div>
+                        <div class="label"><strong>Click to upload</strong> a photo of the sonde</div>
+                        <div class="hint">JPG or PNG, max 10MB</div>
+                        <input type="file" id="photo-input" name="photo" accept="image/*">
+                    </div>
+                    <div id="photo-preview"><img id="preview-img"></div>
+                    {% if form.photo.errors %}<ul class="errorlist">{% for e in form.photo.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Details</h3>
+
+                <div class="field">
+                    <label>Note</label>
+                    {{ form.note }}
+                    <div class="note-example">
+                        <em>Example:</em> "Found near Tribhuvan Airport road, hanging from a tree branch. Device looks intact, no damage."
+                    </div>
+                    {% if form.note.errors %}<ul class="errorlist">{% for e in form.note.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn">Submit Report</button>
+        </form>
+
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+var pickMap = L.map('pick-map').setView([27.7172, 85.3240], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap'
+}).addTo(pickMap);
+
+var pickMarker = null;
+
+function updateFields(lat, lng) {
+    document.getElementById('id_lat').value = lat.toFixed(6);
+    document.getElementById('id_lon').value = lng.toFixed(6);
+    document.getElementById('pick-display').textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
+}
+
+pickMap.on('click', function(e) {
+    if (pickMarker) pickMap.removeLayer(pickMarker);
+    pickMarker = L.marker(e.latlng, { draggable: true }).addTo(pickMap);
+    updateFields(e.latlng.lat, e.latlng.lng);
+    pickMarker.on('dragend', function() {
+        var pos = pickMarker.getLatLng();
+        updateFields(pos.lat, pos.lng);
+    });
+});
+
+var latField = document.getElementById('id_lat');
+var lonField = document.getElementById('id_lon');
+if (latField.value && lonField.value) {
+    var lat = parseFloat(latField.value);
+    var lng = parseFloat(lonField.value);
+    pickMap.setView([lat, lng], 14);
+    pickMarker = L.marker([lat, lng], { draggable: true }).addTo(pickMap);
+    updateFields(lat, lng);
+    pickMarker.on('dragend', function() {
+        var pos = pickMarker.getLatLng();
+        updateFields(pos.lat, pos.lng);
+    });
+}
+
+document.getElementById('photo-input').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+        document.getElementById('preview-img').src = ev.target.result;
+        document.getElementById('photo-preview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+});
+</script>
+
+</body>
+</html>

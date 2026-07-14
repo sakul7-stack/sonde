@@ -1,0 +1,235 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="{% static 'tracker/ballon.png' %}" type="image/png">
+<link rel="stylesheet" href="{% static 'global/base.css' %}">
+<title>Dashboard</title>
+
+<style>
+.container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 0 16px;
+}
+.card { margin-bottom: 15px; }
+.title { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
+.label { font-size: 12px; color: #555; margin-top: 10px; }
+.label:first-of-type { margin-top: 0; }
+.value { font-size: 14px; }
+.badge {
+    display: inline-block;
+    border: 1px solid #000;
+    padding: 3px 8px;
+    font-size: 12px;
+    margin-right: 5px;
+    margin-bottom: 4px;
+}
+.key-box {
+    border: 1px dashed #000;
+    padding: 10px;
+    font-family: monospace;
+    word-break: break-all;
+    margin-bottom: 10px;
+    font-size: 13px;
+}
+button {
+    border: 1px solid #000;
+    background: #fff;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: Arial, sans-serif;
+}
+button:hover { background: #000; color: #fff; }
+input[type="checkbox"] { margin-right: 5px; }
+input[type="number"] {
+    width: 100%;
+    padding: 6px;
+    border: 1px solid #000;
+    margin-top: 5px;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+}
+.grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.stat-label { font-size: 11px; color: #555; }
+.stat-value { font-size: 20px; font-weight: bold; }
+.quick-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+.quick-links a {
+    border: 1px solid #000;
+    padding: 6px 12px;
+    font-size: 13px;
+    text-decoration: none;
+    color: #000;
+}
+.quick-links a:hover { background: #000; color: #fff; }
+</style>
+</head>
+
+<body>
+
+{% include "navbar.html" with active="dashboard" %}
+
+<div class="container">
+
+    <!-- USER INFO -->
+    <div class="card">
+        <div class="title">Account</div>
+        <div class="grid2">
+            <div>
+                <div class="label">Username</div>
+                <div class="value">{{ user.username|default:"—" }}</div>
+            </div>
+            <div>
+                <div class="label">Email</div>
+                <div class="value">{{ user.email }}</div>
+            </div>
+            <div>
+                <div class="label">Joined</div>
+                <div class="value">{{ user.date_joined|date:"M d, Y" }}</div>
+            </div>
+            <div>
+                <div class="label">Last Login</div>
+                <div class="value">{{ user.last_login|date:"M d, Y H:i"|default:"Never" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="card">
+        <div class="title">Network Stats</div>
+        <div class="grid2">
+            <div>
+                <div class="stat-label">Total sondes tracked</div>
+                <div class="stat-value">{{ sonde_count }}</div>
+            </div>
+            <div>
+                <div class="stat-label">Latest sonde</div>
+                <div class="value">
+                    {% if latest_sonde %}
+                        {{ latest_sonde.sonde_id }}<br>
+                        <span style="font-size:12px;color:#555;">{{ latest_sonde.date|date:"M d, Y H:i" }} UTC</span>
+                    {% else %}
+                        —
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="card">
+        <div class="title">Profile</div>
+        <span class="badge">API User: {{ profile.is_api_user }}</span>
+        <span class="badge">Contributor: {{ profile.is_contributor }}</span>
+    </div>
+
+    <!-- API KEY -->
+    <div class="card">
+        <div class="title">API Key</div>
+
+        {% if api_key %}
+            <div class="label">Created: {{ api_key.created_at|date:"M d, Y" }}</div>
+            <div class="key-box" id="apiKeyBox">
+                {{ api_key.key }}
+            </div>
+
+            <button onclick="copyApiKey()">Copy API Key</button>
+        {% else %}
+            <div class="value">No API key found</div>
+        {% endif %}
+    </div>
+
+    <!-- ROLES -->
+    <div class="card">
+        <div class="title">Roles</div>
+
+        <form method="POST" action="/accounts/update-role/">
+            {% csrf_token %}
+
+            <label>
+                <input type="checkbox" name="is_api_user"
+                    {% if profile.is_api_user %}checked{% endif %}>
+                API User
+            </label>
+
+            <br><br>
+
+            <label>
+                <input type="checkbox" name="is_contributor"
+                    {% if profile.is_contributor %}checked{% endif %}
+                    onchange="toggleContributor()">
+                Contributor
+            </label>
+
+            <!-- CONTRIBUTOR FIELDS -->
+            <div id="contributorFields"
+                 style="margin-top:10px;"
+                 {% if not profile.is_contributor %}hidden{% endif %}>
+
+                <div class="label">Latitude</div>
+                <input type="number" step="any" name="lat"
+                    value="{{ contributor_info.lat|default:'' }}">
+
+                <div class="label">Longitude</div>
+                <input type="number" step="any" name="lon"
+                    value="{{ contributor_info.lon|default:'' }}">
+
+                <div class="label">Altitude</div>
+                <input type="number" step="any" name="alt"
+                    value="{{ contributor_info.alt|default:'' }}">
+            </div>
+
+            <br>
+            <button type="submit">Update</button>
+        </form>
+    </div>
+
+    <!-- QUICK LINKS -->
+    <div class="card">
+        <div class="title">Quick Links</div>
+        <div class="quick-links">
+            <a href="/">Live Tracker</a>
+            <a href="/3d/">GIS Viewer</a>
+            <a href="/history/">History</a>
+            <a href="/predict/">Predict</a>
+            <a href="/burst/">Burst Calc</a>
+            <a href="/chase/">Chase Mode</a>
+            <a href="/skewt/">Skew-T</a>
+            <a href="/api-doc/">API Docs</a>
+            <a href="/report/submit/">Report Sighting</a>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function copyApiKey() {
+    const text = document.getElementById("apiKeyBox").innerText;
+    navigator.clipboard.writeText(text);
+}
+
+function toggleContributor() {
+    const checkbox = document.querySelector('input[name="is_contributor"]');
+    const box = document.getElementById("contributorFields");
+    box.hidden = !checkbox.checked;
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    toggleContributor();
+});
+</script>
+
+</body>
+</html>

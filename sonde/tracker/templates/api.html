@@ -1,0 +1,680 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="{% static 'tracker/ballon.png' %}" type="image/png">
+<link rel="stylesheet" href="{% static 'global/base.css' %}">
+<title>Sonde Nepal API Docs</title>
+
+<style>
+.container {
+    max-width: 1000px;
+    padding: 10px;
+}
+.badge {
+    border: 1px solid #000;
+    padding: 3px 8px;
+    font-size: 12px;
+    display: inline-block;
+    margin-top: 8px;
+}
+.toc {
+    columns: 2;
+    column-gap: 20px;
+    padding-left: 18px;
+}
+.toc li { font-size: 13px; margin-bottom: 4px; break-inside: avoid; }
+.method {
+    display: inline-block;
+    border: 1px solid #000;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-weight: bold;
+    font-family: monospace;
+    margin-right: 4px;
+}
+.params {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 13px;
+}
+.params th, .params td {
+    border: 1px solid #000;
+    padding: 5px 8px;
+    text-align: left;
+}
+.params th { background: #f0f0f0; font-size: 12px; }
+.params .required { font-weight: bold; }
+code {
+    background: #f5f5f5;
+    border: 1px solid #ccc;
+    padding: 1px 4px;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+}
+.code-box {
+    position: relative;
+    margin-top: 10px;
+}
+.copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    border: 1px solid #000;
+    background: #fff;
+    font-size: 12px;
+    padding: 3px 8px;
+    cursor: pointer;
+    z-index: 1;
+}
+.copy-btn:hover { background: #000; color: #fff; }
+@media (max-width: 600px) { .toc { columns: 1; } }
+</style>
+</head>
+
+<body>
+
+{% include "navbar.html" with active="api" %}
+
+<div class="container">
+
+<!-- HEADER -->
+<div class="card">
+    <h1>Sonde Nepal API Documentation</h1>
+    <p style="font-size:13px;margin-top:4px;">REST API for radiosonde telemetry, atmospheric data, and flight predictions.</p>
+    <span class="badge">Base URL: https://sonde.kushal-kc.com.np</span>
+    <span class="badge">Version: 1.0</span>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<div class="card">
+    <h2>Endpoints</h2>
+    <ol class="toc">
+        <li><a href="#ingest">POST /api/ingest/</a> — Ingest telemetry</li>
+        <li><a href="#sondes">GET /api/sondes/</a> — Latest sonde</li>
+        <li><a href="#pred">GET /api/pred/</a> — Flight prediction</li>
+        <li><a href="#data-by-date">GET /data/data_by_date/</a> — Sonde list by date</li>
+        <li><a href="#sonde-data">GET /data/sonde_data/</a> — Sonde telemetry</li>
+        <li><a href="#sonde-kml">GET /data/sonde_KML/</a> — Download KML</li>
+        <li><a href="#skewt">GET /data/skewt/</a> — Skew-T diagram</li>
+        <li><a href="#hodograph">GET /data/hodograph/</a> — Hodograph</li>
+        <li><a href="#emagram">GET /data/emagram/</a> — Emagram</li>
+        <li><a href="#stuve">GET /data/stuve/</a> — Stuve diagram</li>
+        <li><a href="#tephigram">GET /data/tephigram/</a> — Tephigram</li>
+        <li><a href="#atmosphere">GET /data/atmosphere/</a> — Atmospheric indices</li>
+        <li><a href="#history-data">GET /history/data/</a> — Recent sondes</li>
+        <li><a href="#predict">GET /predict_prox/</a> — Tawhiri proxy</li>
+    </ol>
+</div>
+
+<!-- AUTH -->
+<div class="card" id="auth">
+    <h2>Authentication</h2>
+    <p>Protected endpoints require an API key sent via the <code>X-API-KEY</code> header. Get your key from the <a href="/accounts/dash/">Dashboard</a> after signing up.</p>
+
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>X-API-KEY: YOUR_API_KEY</pre>
+    </div>
+
+    <p style="font-size:12px;margin-top:8px;">Endpoints marked <span class="badge" style="margin:0;">No Auth</span> work without a key.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 1. INGEST -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="card" id="ingest">
+    <h2>1. Ingest Telemetry</h2>
+    <p><span class="method">POST</span> <code>/api/ingest/</code> <span class="badge">Auth Required</span></p>
+    <p style="font-size:13px;margin-top:6px;">Submit a single telemetry frame. Creates or updates a sonde record and triggers an automatic flight prediction.</p>
+
+    <h3>Request Body (JSON)</h3>
+    <table class="params">
+        <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        <tr><td class="required">id</td><td>string</td><td>Yes</td><td>Sonde identifier</td></tr>
+        <tr><td class="required">datetime</td><td>string</td><td>Yes</td><td>ISO 8601 timestamp</td></tr>
+        <tr><td>lat</td><td>float</td><td>No</td><td>Latitude</td></tr>
+        <tr><td>lon</td><td>float</td><td>No</td><td>Longitude</td></tr>
+        <tr><td>alt</td><td>float</td><td>No</td><td>Altitude (m)</td></tr>
+        <tr><td>temp</td><td>float</td><td>No</td><td>Temperature (°C)</td></tr>
+        <tr><td>humidity</td><td>float</td><td>No</td><td>Humidity (%)</td></tr>
+        <tr><td>pressure</td><td>float</td><td>No</td><td>Pressure (hPa)</td></tr>
+        <tr><td>vel_h</td><td>float</td><td>No</td><td>Horizontal velocity (m/s)</td></tr>
+        <tr><td>vel_v</td><td>float</td><td>No</td><td>Vertical velocity (m/s)</td></tr>
+        <tr><td>heading</td><td>float</td><td>No</td><td>Heading (degrees)</td></tr>
+        <tr><td>batt</td><td>float</td><td>No</td><td>Battery voltage</td></tr>
+        <tr><td>f_centre</td><td>float</td><td>No</td><td>Centre frequency</td></tr>
+        <tr><td>snr</td><td>float</td><td>No</td><td>Signal-to-noise ratio</td></tr>
+        <tr><td>type</td><td>string</td><td>No</td><td>Sonde type (e.g. RS41)</td></tr>
+        <tr><td>subtype</td><td>string</td><td>No</td><td>Sonde subtype</td></tr>
+        <tr><td>freq</td><td>string</td><td>No</td><td>Frequency</td></tr>
+        <tr><td>frame</td><td>int</td><td>No</td><td>Frame number</td></tr>
+    </table>
+
+    <h3>Python</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>import requests
+
+url = "https://sonde.kushal-kc.com.np/api/ingest/"
+headers = {"X-API-KEY": "YOUR_KEY", "Content-Type": "application/json"}
+
+payload = {
+    "id": "IMET5-55095407",
+    "datetime": "2026-05-04T00:15:00Z",
+    "lat": 27.682,
+    "lon": 85.288,
+    "alt": 15000,
+    "temp": -45.2,
+    "humidity": 12.0,
+    "pressure": 100.0,
+    "vel_h": 15.3,
+    "vel_v": 5.1,
+    "heading": 225.0,
+    "batt": 3.8,
+    "f_centre": 403000000,
+    "snr": 18.5
+}
+
+r = requests.post(url, json=payload, headers=headers)
+print(r.json())  # {"ok": true}</pre>
+    </div>
+
+    <h3>Response</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>{"ok": true}</pre>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 2. LATEST SONDE -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="card" id="sondes">
+    <h2>2. Get Latest Sonde</h2>
+    <p><span class="method">GET</span> <code>/api/sondes/</code> <span class="badge">No Auth</span></p>
+    <p style="font-size:13px;margin-top:6px;">Returns all telemetry frames for the most recently received sonde, ordered by frame number.</p>
+
+    <h3>Python</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>import requests
+
+r = requests.get("https://sonde.kushal-kc.com.np/api/sondes/")
+sonde = r.json()
+
+print(f"ID: {sonde['sonde_id']}")
+print(f"Frames: {len(sonde['data'])}")
+print(f"Latest: {sonde['data'][0]['lat']}, {sonde['data'][0]['lon']}")</pre>
+    </div>
+
+    <h3>curl</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>curl.exe "https://sonde.kushal-kc.com.np/api/sondes/"</pre>
+    </div>
+
+    <h3>Response</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>{
+  "sonde_id": "IMET5-55095407",
+  "type": "iMet-54",
+  "subtype": null,
+  "data": [
+    {
+      "frame": 42,
+      "datetime": "2026-05-04T00:30:12Z",
+      "lat": 27.71,
+      "lon": 85.32,
+      "alt": 28500,
+      "vel_h": 18.2,
+      "vel_v": 5.5,
+      "heading": 210.0,
+      "temp": -52.1,
+      "humidity": 5.0,
+      "pressure": 25.3,
+      "battery": 3.6,
+      "f_centre": 403001200,
+      "snr": 12.4
+    },
+    ...
+  ]
+}</pre>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 3. PREDICTION -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="card" id="pred">
+    <h2>3. Get Flight Prediction</h2>
+    <p><span class="method">GET</span> <code>/api/pred/?sonde_id=ID</code> <span class="badge">No Auth</span></p>
+    <p style="font-size:13px;margin-top:6px;">Returns the Tawhiri flight prediction (ascent + descent trajectory) for a given sonde.</p>
+
+    <table class="params">
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        <tr><td class="required">sonde_id</td><td>string</td><td>Yes</td><td>Sonde identifier</td></tr>
+    </table>
+
+    <h3>Python</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>import requests
+
+r = requests.get("https://sonde.kushal-kc.com.np/api/pred/",
+                  params={"sonde_id": "IMET5-55095407"})
+pred = r.json()
+
+# Ascent trajectory
+ascent = pred["data"]["prediction"][0]["trajectory"]
+# Descent trajectory
+descent = pred["data"]["prediction"][1]["trajectory"]
+
+landing = descent[-1]
+print(f"Landing: {landing['latitude']}, {landing['longitude']} @ {landing['altitude']}m")</pre>
+    </div>
+
+    <h3>curl</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>curl.exe "https://sonde.kushal-kc.com.np/api/pred/?sonde_id=IMET5-55095407"</pre>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 4. DATA BY DATE -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="card" id="data-by-date">
+    <h2>4. Get Sonde List by Date</h2>
+    <p><span class="method">GET</span> <code>/data/data_by_date/?date=YYYY-MM-DD</code> <span class="badge">Auth Required</span></p>
+    <p style="font-size:13px;margin-top:6px;">Returns all sondes launched on a given date.</p>
+
+    <table class="params">
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        <tr><td class="required">date</td><td>string</td><td>Yes</td><td>Date in YYYY-MM-DD format</td></tr>
+    </table>
+
+    <h3>Python</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>import requests
+
+url = "https://sonde.kushal-kc.com.np/data/data_by_date/"
+headers = {"X-API-KEY": "YOUR_KEY"}
+params = {"date": "2026-05-04"}
+
+r = requests.get(url, headers=headers, params=params)
+for s in r.json()["data"]:
+    print(f"{s['sonde_id']} — {s['date']}")</pre>
+    </div>
+
+    <h3>Response</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>{
+  "data": [
+    {
+      "id": 1,
+      "sonde_id": "IMET5-55095407",
+      "type": "iMet-54",
+      "subtype": null,
+      "date": "2026-05-04T00:00:00Z"
+    }
+  ]
+}</pre>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 5. SONDE DATA -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="card" id="sonde-data">
+    <h2>5. Get Sonde Telemetry</h2>
+    <p><span class="method">GET</span> <code>/data/sonde_data/?sonde_id=ID</code> <span class="badge">Auth Required</span></p>
+    <p style="font-size:13px;margin-top:6px;">Returns all telemetry frames for a specific sonde.</p>
+
+    <table class="params">
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        <tr><td class="required">sonde_id</td><td>string</td><td>Yes</td><td>Sonde identifier</td></tr>
+    </table>
+
+    <h3>Python</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>import requests
+
+url = "https://sonde.kushal-kc.com.np/data/sonde_data/"
+headers = {"X-API-KEY": "YOUR_KEY"}
+params = {"sonde_id": "IMET5-55095407"}
+
+r = requests.get(url, headers=headers, params=params)
+data = r.json()
+
+for frame in data["data"]:
+    print(f"Alt: {frame['alt']}m, Temp: {frame['temp']}°C")</pre>
+    </div>
+
+    <h3>curl</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>curl.exe "https://sonde.kushal-kc.com.np/data/sonde_data/?sonde_id=IMET5-55095407" -H "X-API-KEY: YOUR_KEY"</pre>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 6. KML -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="card" id="sonde-kml">
+    <h2>6. Download KML Path</h2>
+    <p><span class="method">GET</span> <code>/data/sonde_KML/?sonde_id=ID</code> <span class="badge">Auth Required</span></p>
+    <p style="font-size:13px;margin-top:6px;">Downloads a KML file with the sonde's 3D flight path. Open in Google Earth or import into GIS software.</p>
+
+    <table class="params">
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        <tr><td class="required">sonde_id</td><td>string</td><td>Yes</td><td>Sonde identifier</td></tr>
+    </table>
+
+    <h3>Python (download file)</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>import requests
+
+url = "https://sonde.kushal-kc.com.np/data/sonde_KML/"
+headers = {"X-API-KEY": "YOUR_KEY"}
+params = {"sonde_id": "IMET5-55095407"}
+
+r = requests.get(url, headers=headers, params=params)
+
+with open("sonde_path.kml", "wb") as f:
+    f.write(r.content)
+print("Downloaded sonde_path.kml")</pre>
+    </div>
+
+    <h3>curl</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>curl.exe "https://sonde.kushal-kc.com.np/data/sonde_KML/?sonde_id=IMET5-55095407" -H "X-API-KEY: YOUR_KEY" -o sonde.kml</pre>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 7. SKEW-T -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="card" id="skewt">
+    <h2>7. Skew-T Log-P Diagram</h2>
+    <p><span class="method">GET</span> <code>/data/skewt/?sonde_id=ID</code> <span class="badge">No Auth</span></p>
+    <p style="font-size:13px;margin-top:6px;">Returns a Skew-T log-P diagram as a PNG image showing temperature, dewpoint, and wind barbs vs pressure.</p>
+
+    <table class="params">
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        <tr><td class="required">sonde_id</td><td>string</td><td>Yes</td><td>Sonde identifier</td></tr>
+    </table>
+
+    <h3>Python</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>import requests
+
+r = requests.get("https://sonde.kushal-kc.com.np/data/skewt/",
+                  params={"sonde_id": "IMET5-55095407"})
+
+with open("skewt.png", "wb") as f:
+    f.write(r.content)</pre>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 8. HODOGRAPH -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="card" id="hodograph">
+    <h2>8. Hodograph</h2>
+    <p><span class="method">GET</span> <code>/data/hodograph/?sonde_id=ID</code> <span class="badge">No Auth</span></p>
+    <p style="font-size:13px;margin-top:6px;">Returns a hodograph PNG plotting U and V wind components with altitude color-coding. Useful for wind shear analysis.</p>
+
+    <table class="params">
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        <tr><td class="required">sonde_id</td><td>string</td><td>Yes</td><td>Sonde identifier</td></tr>
+    </table>
+
+    <h3>Python</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>import requests
+
+r = requests.get("https://sonde.kushal-kc.com.np/data/hodograph/",
+                  params={"sonde_id": "IMET5-55095407"})
+
+with open("hodograph.png", "wb") as f:
+    f.write(r.content)</pre>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 9. EMAGRAM -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="card" id="emagram">
+    <h2>9. Emagram</h2>
+    <p><span class="method">GET</span> <code>/data/emagram/?sonde_id=ID</code> <span class="badge">No Auth</span></p>
+    <p style="font-size:13px;margin-top:6px;">Returns an emagram PNG with temperature, dewpoint, isotherms, and dry adiabats on a log-pressure axis.</p>
+
+    <table class="params">
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        <tr><td class="required">sonde_id</td><td>string</td><td>Yes</td><td>Sonde identifier</td></tr>
+    </table>
+
+    <h3>curl</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>curl.exe "https://sonde.kushal-kc.com.np/data/emagram/?sonde_id=IMET5-55095407" -o emagram.png</pre>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 10. STUVE -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="card" id="stuve">
+    <h2>10. Stuve Diagram</h2>
+    <p><span class="method">GET</span> <code>/data/stuve/?sonde_id=ID</code> <span class="badge">No Auth</span></p>
+    <p style="font-size:13px;margin-top:6px;">Returns a Stuve diagram PNG showing temperature and moisture profiles.</p>
+
+    <table class="params">
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        <tr><td class="required">sonde_id</td><td>string</td><td>Yes</td><td>Sonde identifier</td></tr>
+    </table>
+
+    <h3>curl</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>curl.exe "https://sonde.kushal-kc.com.np/data/stuve/?sonde_id=IMET5-55095407" -o stuve.png</pre>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 11. TEPHIGRAM -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="card" id="tephigram">
+    <h2>11. Tephigram</h2>
+    <p><span class="method">GET</span> <code>/data/tephigram/?sonde_id=ID</code> <span class="badge">No Auth</span></p>
+    <p style="font-size:13px;margin-top:6px;">Returns a tephigram PNG with temperature, dewpoint, isotherms, and dry adiabats. Common in UK Met Office analysis.</p>
+
+    <table class="params">
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        <tr><td class="required">sonde_id</td><td>string</td><td>Yes</td><td>Sonde identifier</td></tr>
+    </table>
+
+    <h3>curl</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>curl.exe "https://sonde.kushal-kc.com.np/data/tephigram/?sonde_id=IMET5-55095407" -o tephigram.png</pre>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 12. ATMOSPHERE -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="card" id="atmosphere">
+    <h2>12. Atmospheric Indices</h2>
+    <p><span class="method">GET</span> <code>/data/atmosphere/?sonde_id=ID</code> <span class="badge">No Auth</span></p>
+    <p style="font-size:13px;margin-top:6px;">Returns computed atmospheric stability indices and derived thermodynamic data for each pressure level.</p>
+
+    <table class="params">
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        <tr><td class="required">sonde_id</td><td>string</td><td>Yes</td><td>Sonde identifier</td></tr>
+    </table>
+
+    <h3>Python</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>import requests
+
+r = requests.get("https://sonde.kushal-kc.com.np/data/atmosphere/",
+                  params={"sonde_id": "IMET5-55095407"})
+atm = r.json()
+
+indices = atm["indices"]
+print(f"CAPE: {indices['cape']} J/kg")
+print(f"CIN: {indices['cin']} J/kg")
+print(f"K-Index: {indices['k_index']}")
+print(f"Precipitable Water: {indices['pw_mm']} mm")
+print(f"0-6km Shear: {indices['shear_06_ms']} m/s")</pre>
+    </div>
+
+    <h3>Response</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>{
+  "sonde_id": "IMET5-55095407",
+  "type": "iMet-54",
+  "subtype": null,
+  "date": "2026-05-04T00:15:00Z",
+  "levels": 85,
+  "indices": {
+    "cape": 1250.5,
+    "cin": -45.2,
+    "li": -3.8,
+    "k_index": 28.5,
+    "showalter": -1.2,
+    "total_totals": 42.0,
+    "pw_mm": 32.4,
+    "lcl_hpa": 850.0,
+    "tropopause_hpa": 120.0,
+    "tropopause_km": 16.5,
+    "shear_01_ms": 8.5,
+    "shear_06_ms": 15.2,
+    "max_wind_ms": 35.0,
+    "max_wind_hpa": 250.0,
+    "max_wind_dir": 270.0
+  },
+  "data": [
+    {
+      "frame": 0,
+      "datetime": "2026-05-04T00:15:00Z",
+      "alt": 1350,
+      "pressure_measured": 850.0,
+      "pressure_estimated": 850.0,
+      "temp": 22.5,
+      "dewpoint": 18.0,
+      "humidity": 75.0,
+      "potential_temp": 300.2,
+      "equiv_potential_temp": 340.5,
+      "wind_u": -5.0,
+      "wind_v": 8.0,
+      "vel_h": 9.4,
+      "vel_v": null,
+      "heading": null,
+      "snr": 20.1
+    },
+    ...
+  ]
+}</pre>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 13. HISTORY DATA -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="card" id="history-data">
+    <h2>13. Recent sondes</h2>
+    <p><span class="method">GET</span> <code>/history/data/</code> <span class="badge">No Auth</span></p>
+    <p style="font-size:13px;margin-top:6px;">Returns the 5 most recent sondes with full telemetry. Used by the History page.</p>
+
+    <h3>Python</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>import requests
+
+r = requests.get("https://sonde.kushal-kc.com.np/history/data/")
+history = r.json()
+
+for sonde in history["data"]:
+    print(f"{sonde['sonde_id']} — {sonde['date']} — {len(sonde['data'])} frames")</pre>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- 14. PREDICT PROXY -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="card" id="predict">
+    <h2>14. Flight Prediction Proxy</h2>
+    <p><span class="method">GET</span> <code>/predict_prox/</code> <span class="badge">No Auth</span></p>
+    <p style="font-size:13px;margin-top:6px;">Proxies requests to the SondeHub Tawhiri prediction API. Pass any Tawhiri parameters as query strings.</p>
+
+    <table class="params">
+        <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        <tr><td>launch_datetime</td><td>string</td><td>No</td><td>ISO 8601 launch time</td></tr>
+        <tr><td>launch_latitude</td><td>float</td><td>No</td><td>Launch latitude</td></tr>
+        <tr><td>launch_longitude</td><td>float</td><td>No</td><td>Launch longitude</td></tr>
+        <tr><td>launch_altitude</td><td>float</td><td>No</td><td>Launch altitude (m)</td></tr>
+        <tr><td>ascent_rate</td><td>float</td><td>No</td><td>Ascent rate (m/s)</td></tr>
+        <tr><td>burst_altitude</td><td>float</td><td>No</td><td>Burst altitude (m)</td></tr>
+        <tr><td>descent_rate</td><td>float</td><td>No</td><td>Descent rate (m/s)</td></tr>
+    </table>
+
+    <h3>Python</h3>
+    <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        <pre>import requests
+
+r = requests.get("https://sonde.kushal-kc.com.np/predict_prox/", params={
+    "launch_datetime": "2026-05-04T00:00:00Z",
+    "launch_latitude": 27.682,
+    "launch_longitude": 85.288,
+    "launch_altitude": 1350,
+    "ascent_rate": 5.0,
+    "burst_altitude": 30000,
+    "descent_rate": 5.0
+})
+prediction = r.json()
+print(prediction)</pre>
+    </div>
+</div>
+
+<!-- FOOTER NOTE -->
+<div class="card">
+    <h2>Rate Limits &amp; Notes</h2>
+    <ul style="font-size:13px;padding-left:18px;">
+        <li>No rate limits are currently enforced, but be respectful.</li>
+        <li>The <code>/api/sondes/</code> endpoint returns only the <b>latest</b> sonde. Use <code>/data/data_by_date/</code> + <code>/data/sonde_data/</code> for historical data.</li>
+        <li>Image endpoints (<code>/data/skewt/</code>, etc.) return PNG files directly.</li>
+        <li>Flight predictions are generated automatically when telemetry is ingested via <code>/api/ingest/</code>.</li>
+        <li>Get an API key at <a href="/accounts/dash/">Dashboard</a> (sign up required).</li>
+    </ul>
+</div>
+
+</div>
+
+<script>
+function copyCode(btn) {
+    const text = btn.nextElementSibling.innerText;
+    navigator.clipboard.writeText(text);
+    btn.innerText = "Copied!";
+    setTimeout(() => btn.innerText = "Copy", 1200);
+}
+</script>
+
+</body>
+</html>

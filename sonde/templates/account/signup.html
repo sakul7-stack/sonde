@@ -1,0 +1,37 @@
+{% extends "allauth/layouts/base.html" %}
+{% load i18n %}
+{% block head_title %}{% trans "Sign Up" %}{% endblock %}
+{% block content %}
+<h1>Create Account</h1>
+
+<form method="post" action="{% url 'account_signup' %}">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+        <ul class="errorlist">
+            {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+    {% endif %}
+
+    {% for field in form %}
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+            <ul class="errorlist">
+                {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+        {% endif %}
+        {% if field.help_text %}
+            <span class="helptext">{{ field.help_text }}</span>
+        {% endif %}
+    {% endfor %}
+
+    {{ redirect_field }}
+
+    <button type="submit" class="btn">Sign Up</button>
+</form>
+
+<div class="auth-links">
+    Already have an account? <a href="{% url 'account_login' %}">Sign in</a>
+</div>
+{% endblock %}

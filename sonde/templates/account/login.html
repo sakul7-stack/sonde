@@ -1,0 +1,41 @@
+{% extends "allauth/layouts/base.html" %}
+{% load i18n socialaccount %}
+{% block head_title %}{% trans "Sign In" %}{% endblock %}
+{% block content %}
+<h1>Sign In</h1>
+
+<form method="post" action="{% url 'account_login' %}">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+        <ul class="errorlist">
+            {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+    {% endif %}
+
+    {% for field in form %}
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+            <ul class="errorlist">
+                {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
+            </ul>
+        {% endif %}
+        {% if field.help_text %}
+            <span class="helptext">{{ field.help_text }}</span>
+        {% endif %}
+    {% endfor %}
+
+    {{ redirect_field }}
+
+    <button type="submit" class="btn">Sign In</button>
+</form>
+
+<div class="auth-divider">or</div>
+
+<a href="{% provider_login_url 'google' process='login' %}" class="btn btn-outline" style="text-align:center;">Continue with Google</a>
+
+<div class="auth-links">
+    No account? <a href="{% url 'account_signup' %}">Sign up</a>
+</div>
+{% endblock %}
