@@ -1,24 +1,10 @@
-import os
 import requests
 import time
 import random
 from datetime import datetime, timezone, timedelta
-from pathlib import Path
 
-# Load .env from sonde/ directory
-_env_path = Path(__file__).resolve().parent / "sonde" / ".env"
-if _env_path.exists():
-    with open(_env_path) as _f:
-        for _line in _f:
-            _line = _line.strip()
-            if not _line or _line.startswith("#"):
-                continue
-            if "=" in _line:
-                _key, _, _val = _line.partition("=")
-                os.environ.setdefault(_key.strip(), _val.strip())
-
-SERVER = os.environ.get("INGEST_URL", "http://127.0.0.1:8000/api/ingest/")
-API_KEY = os.environ.get("API_KEY", "")
+SERVER = "http://127.0.0.1:8000/api/ingest/"
+API_KEY = "YOUR_API_KEY_HERE"
 
 SONDE_ID = "test-10d"
 

@@ -69,37 +69,23 @@ pip install python-socketio requests
 
 1. Run `radiosonde_auto_rx` on your receiver station (default web interface at `http://0.0.0.0:5000`)
 2. Register at [sonde.kushal-kc.com.np/accounts/dash/](https://sonde.kushal-kc.com.np/accounts/dash/) via Google or email to get your API key
-3. Configure `forwarder.py` (via environment variables or a `sonde/.env` file) and run it
+3. Edit `forwarder.py` with your settings and run it
 
 ### forwarder.py
 
-The forwarder reads its settings from the environment (or a `sonde/.env` file):
+Edit the following values directly in `forwarder.py`:
 
-- `INGEST_URL` — server ingest endpoint (default `https://sonde.kushal-kc.com.np/api/ingest/`)
+- `SERVER` — server ingest endpoint
 - `API_KEY` — your API key from the dashboard
-- `SONDE_SOURCE_URL` — your local `radiosonde_auto_rx` web interface (default `http://192.168.1.15:5000`)
+- `SONDE_SOURCE_URL` — your local `radiosonde_auto_rx` web interface
 
 ```python
-import os
 import socketio
 import requests
-from pathlib import Path
 
-# Load .env from sonde/ directory
-_env_path = Path(__file__).resolve().parent / "sonde" / ".env"
-if _env_path.exists():
-    with open(_env_path) as _f:
-        for _line in _f:
-            _line = _line.strip()
-            if not _line or _line.startswith("#"):
-                continue
-            if "=" in _line:
-                _key, _, _val = _line.partition("=")
-                os.environ.setdefault(_key.strip(), _val.strip())
-
-SERVER = os.environ.get("INGEST_URL", "https://sonde.kushal-kc.com.np/api/ingest/")
-API_KEY = os.environ.get("API_KEY", "")            # Your API key from the dashboard
-SONDE_SOURCE_URL = os.environ.get("SONDE_SOURCE_URL", "http://192.168.1.15:5000")
+SERVER = "https://sonde.kushal-kc.com.np/api/ingest/"
+API_KEY = "YOUR_API_KEY_HERE"
+SONDE_SOURCE_URL = "http://192.168.1.15:5000"
 
 sio = socketio.Client()
 
@@ -111,7 +97,6 @@ def on_connect():
 def on_disconnect():
     print("Disconnected")
 
-# Telemetry event — forwards sonde position data to the server
 @sio.on('telemetry_event', namespace='/update_status')
 def on_data(data):
     try:
@@ -125,7 +110,6 @@ def on_data(data):
     except Exception as e:
         print("Failed:", e)
 
-# Connect to local auto_rx instance
 sio.connect(SONDE_SOURCE_URL, namespaces=['/update_status'])
 sio.wait()
 ```
